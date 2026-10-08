@@ -5,6 +5,7 @@ import { HABITS } from "../domain/habits";
 import { cardSummary, entriesOn } from "../domain/status";
 import { focusLine, periodStats } from "../domain/stats";
 import type { CardState, HabitId } from "../domain/types";
+import type { World } from "../domain/world";
 import { addDays, formatLong, relativeLabel, weekDays, weekStart, type DayKey } from "../lib/date";
 import { NoReelsSheet } from "../sheets/NoReelsSheet";
 import { SessionSheet } from "../sheets/SessionSheet";
@@ -33,11 +34,15 @@ export function TodayView({
   today,
   setDate,
   goSettings,
+  goForest,
+  world,
 }: {
   date: DayKey;
   today: DayKey;
   setDate: (d: DayKey) => void;
   goSettings: () => void;
+  goForest: () => void;
+  world: World;
 }) {
   const { data } = useStore();
   const s = data.settings;
@@ -95,6 +100,20 @@ export function TodayView({
           Logging for {formatLong(date)} · back to today ›
         </button>
       )}
+
+      <button className={`forest-strip${world.thisWeek.strong ? " done" : ""}`} onClick={goForest}>
+        <span className="fs-icon" aria-hidden="true">
+          🌲
+        </span>
+        <span className="fs-text">
+          {world.thisWeek.strong
+            ? "Strong week ✓ · a new resident moved in"
+            : `${world.thisWeek.hit}/${world.thisWeek.needed} targets → ${world.next}`}
+        </span>
+        <span className="fs-arrow" aria-hidden="true">
+          ›
+        </span>
+      </button>
 
       <ul className="cards">
         {summaries.map(({ h, sum }) => {
