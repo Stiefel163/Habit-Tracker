@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#e9eee6">
+<title>Habitat Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one narrow column — the living world on top, today's habits right under it, the collection below. */
+:root {
+  /* Welt "Kanadischer Wald": nebliger Morgen, Ahornrot als Akzent */
+  --bg: #e9eee6;
+  --surface: #f7f9f4;
+  --ink: #1f2a22;
+  --muted: #5d6b60;
+  --line: #cfd8cc;
+  --accent: #b9471f;
+  --accent-ink: #ffffff;
+  --good: #3f7d4e;
+  --track: #dde5d9;
+  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+/* Welt "Unterwasser": tiefes Pazifikblau, sonniges Korallenorange als Akzent */
+:root[data-world="ocean"] {
+  --bg: #071a2b;
+  --surface: #0d2740;
+  --ink: #e4f1f8;
+  --muted: #8fb0c4;
+  --line: #1f4260;
+  --accent: #ffb357;
+  --accent-ink: #1a1206;
+  --good: #4fd1b8;
+  --track: #163552;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--font-body);
+  padding-inline: 16px;
+  padding-block: 12px 48px;
+  transition: background .4s ease, color .4s ease;
+}
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+
+/* Kopf */
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font: 400 1.9rem/1.1 var(--font-display); margin: 0; letter-spacing: -.01em; }
+h1 small { display: block; font: 500 .8rem/1.4 var(--font-body); color: var(--muted); letter-spacing: .02em; }
+h2 { font: 400 1.3rem/1.2 var(--font-display); margin: 0; text-wrap: balance; }
+
+.switch { display: inline-flex; background: var(--track); border-radius: 999px; padding: 4px; gap: 4px; }
+.switch button {
+  border: 0; background: transparent; color: var(--muted); font: 600 .9rem var(--font-body);
+  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+}
+.switch button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+
+button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Szene */
+.scene-card { position: relative; border-radius: 20px; overflow: hidden; background: var(--track); box-shadow: 0 8px 30px rgb(0 0 0 / .18); }
+#scene { display: block; width: 100%; height: auto; aspect-ratio: 400 / 250; max-width: 100%; }
+.scene-badge {
+  position: absolute; left: 12px; top: 12px; background: rgb(255 255 255 / .82); color: #1f2a22;
+  font: 600 .78rem var(--font-body); padding: 4px 10px; border-radius: 999px; letter-spacing: .03em;
+}
+:root[data-world="ocean"] .scene-badge { background: rgb(4 20 34 / .7); color: #e4f1f8; }
+.scene-badge[data-preview="true"] { background: var(--accent); color: var(--accent-ink); }
+
+/* Fortschritt */
+.progress { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: center; }
+.points { font: 400 2.6rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.points span { display: block; font: 600 .72rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px; }
+.next { min-width: 0; }
+.next p { margin: 0 0 6px; font-size: .95rem; }
+.bar { height: 10px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--good); border-radius: 99px; transition: width .5s ease; }
+.hint { color: var(--muted); font-size: .85rem; margin: 0; grid-column: 1 / -1; }
+
+.preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: .9rem; color: var(--muted); }
+.preview label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.preview input[type="range"] { flex: 1 1 160px; accent-color: var(--accent); }
+.preview output { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; min-width: 4.5ch; }
+
+/* Gewohnheiten */
+section { display: grid; gap: 12px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.sec-head p { margin: 0; color: var(--muted); font-size: .85rem; }
+
+.habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.habit {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center;
+}
+.habit-main { min-width: 0; display: grid; gap: 8px; }
+.habit-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.habit-title strong { font-weight: 600; font-size: 1.05rem; overflow-wrap: anywhere; }
+.streak { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.streak b { color: var(--accent); }
+.week { display: flex; gap: 6px; flex-wrap: wrap; }
+.day {
+  width: 30px; display: grid; justify-items: center; gap: 2px; background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--muted); font: 600 .62rem var(--font-body); text-transform: uppercase; letter-spacing: .04em;
+}
+.day i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: block; }
+.day[aria-pressed="true"] i { background: var(--good); border-color: var(--good); }
+.check {
+  width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--good); background: transparent;
+  color: var(--good); font: 700 1.5rem/1 var(--font-body); cursor: pointer; display: grid; place-items: center;
+  transition: transform .15s ease, background .2s ease;
+}
+.check:active { transform: scale(.94); }
+.check[aria-pressed="true"] { background: var(--good); color: var(--surface); }
+.check span { font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.habit-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.del { background: none; border: 0; color: var(--muted); font: 500 .78rem var(--font-body); cursor: pointer; padding: 2px 4px; }
+.del[data-armed="true"] { color: var(--accent); font-weight: 700; }
+
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 16px; padding: 18px; color: var(--muted); margin: 0; }
+
+.add { display: flex; gap: 8px; }
+.add input {
+  flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font: 400 1rem var(--font-body);
+}
+.btn {
+  border: 0; border-radius: 12px; padding: 12px 18px; background: var(--accent); color: var(--accent-ink);
+  font: 700 .95rem var(--font-body); cursor: pointer;
+}
+.btn.ghost { background: var(--track); color: var(--ink); }
+
+.sample-note { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: .88rem; background: var(--track); border-radius: 12px; padding: 10px 12px; }
+.sample-note p { margin: 0; flex: 1 1 220px; }
+
+/* Sammlung */
+.collection { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.collection li {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px 8px;
+  display: grid; justify-items: center; gap: 2px; text-align: center;
+}
+.collection .em { font-size: 1.8rem; line-height: 1.2; }
+.collection .nm { font-size: .78rem; font-weight: 600; line-height: 1.2; }
+.collection .pt { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.collection li.locked .em { filter: grayscale(1) brightness(.2); opacity: .35; }
+.collection li.locked .nm { color: var(--muted); }
+:root[data-world="ocean"] .collection li.locked .em { filter: grayscale(1) brightness(1.8); opacity: .22; }
+
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+summary { cursor: pointer; font-weight: 600; }
+details .inner { display: grid; gap: 10px; margin-top: 10px; }
+details p { margin: 0; font-size: .88rem; color: var(--muted); }
+textarea { width: 100%; min-height: 90px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 400 .78rem/1.4 ui-monospace, Menlo, Consolas, monospace; padding: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 150%);
+  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-weight: 600;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .3); transition: transform .35s ease, visibility .35s; visibility: hidden; max-width: calc(100% - 32px); text-align: center; z-index: 10;
+}
+.toast.show { transform: translate(-50%, 0); visibility: visible; }
+
+/* Szenen-Animationen */
+.sway { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 5s ease-in-out infinite alternate; }
+.bob { transform-box: fill-box; transform-origin: 50% 100%; animation: bob 3.2s ease-in-out infinite; }
+.glide { animation: glide 14s ease-in-out infinite alternate; }
+.swim { animation: swim 9s ease-in-out infinite alternate; }
+.float { animation: float 6s ease-in-out infinite; }
+.shimmer { animation: shimmer 6s ease-in-out infinite alternate; }
+.aurora { animation: shimmer 8s ease-in-out infinite alternate; }
+.appear { animation: appear .9s cubic-bezier(.2,1.4,.4,1) both; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+@keyframes glide { from { transform: translate(-30px, 4px); } to { transform: translate(40px, -6px); } }
+@keyframes swim { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes shimmer { from { opacity: .45; } to { opacity: 1; } }
+@keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sway, .bob, .glide, .swim, .float, .shimmer, .aurora, .appear { animation: none !important; }
+  .toast, .bar i, body { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Habitat<small>Halte deine Streaks, und deine Welt wächst.</small></h1>
+    <div class="switch" role="group" aria-label="Welt wählen">
+      <button type="button" id="w-forest" data-world="forest">Kanadischer Wald</button>
+      <button type="button" id="w-ocean" data-world="ocean">Unterwasser</button>
+    </div>
+  </header>
+
+  <div class="scene-card">
+    <svg id="scene" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Deine Welt"></svg>
+    <div class="scene-badge" id="badge"></div>
+  </div>
+
+  <div class="progress">
+    <div class="points" id="points">0<span>Punkte</span></div>
+    <div class="next">
+      <p id="next-text"></p>
+      <div class="bar" aria-hidden="true"><i id="next-bar"></i></div>
+    </div>
+    <p class="hint">Punkte = Summe deiner aktuellen Streaks. Reißt eine Streak, sinken die Punkte, und die Tiere ziehen wieder weg.</p>
+  </div>
+
+  <div class="preview">
+    <label><input type="checkbox" id="preview-on"> Vorschau</label>
+    <input type="range" id="preview-pts" min="0" max="160" value="60" aria-label="Vorschau-Punkte" disabled>
+    <output id="preview-out" for="preview-pts">60 Pkt.</output>
+  </div>
+
+  <section aria-labelledby="h-habits">
+    <div class="sec-head">
+      <h2 id="h-habits">Heute</h2>
+      <p id="today-label"></p>
+    </div>
+    <div class="sample-note" id="sample-note" hidden>
+      <p>Das sind Beispiel-Gewohnheiten, damit du siehst, wie es aussieht. Sobald du deine erste eigene anlegst, verschwinden sie.</p>
+      <button type="button" class="btn ghost" id="clear-sample">Beispiele entfernen</button>
+    </div>
+    <ul class="habits" id="habits"></ul>
+    <form class="add" id="add-form" autocomplete="off">
+      <input id="new-habit" maxlength="40" placeholder="Neue Gewohnheit, z. B. 20 Min. Englisch" aria-label="Neue Gewohnheit">
+      <button class="btn" type="submit">Hinzufügen</button>
+    </form>
+  </section>
+
+  <section aria-labelledby="h-coll">
+    <div class="sec-head">
+      <h2 id="h-coll">Sammlung</h2>
+      <p id="coll-count"></p>
+    </div>
+    <ul class="collection" id="collection"></ul>
+  </section>
+
+  <details>
+    <summary>Daten sichern</summary>
+    <div class="inner">
+      <p>Deine Daten liegen nur in diesem Browser. Kopier den Text, um ein Backup zu machen oder auf ein anderes Gerät umzuziehen.</p>
+      <textarea id="backup" aria-label="Backup-Daten"></textarea>
+      <div class="row">
+        <button type="button" class="btn ghost" id="copy-backup">Kopieren</button>
+        <button type="button" class="btn ghost" id="import-backup">Einfügen &amp; laden</button>
+      </div>
+    </div>
+  </details>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- Welten & Freischaltungen ---------- */
+  // x/y: Position in der 400x250-Szene (y = Fußpunkt), s: Größe, a: Animation
+  var WORLDS = {
+    forest: {
+      label: "Kanadischer Wald",
+      plantWord: "Baum",
+      unlocks: [
+        { at: 2,   em: "🐿️", name: "Eichhörnchen",   x: 58,  y: 236, s: 14, a: "bob" },
+        { at: 5,   em: "🐇", name: "Schneehase",      x: 112, y: 240, s: 15, a: "bob" },
+        { at: 8,   em: "🦫", name: "Biber",           x: 236, y: 192, s: 16, a: "bob" },
+        { at: 12,  em: "🦉", name: "Bartkauz",        x: 22,  y: 176, s: 14, a: "bob" },
+        { at: 17,  em: "🦊", name: "Rotfuchs",        x: 168, y: 238, s: 19, a: "bob" },
+        { at: 23,  em: "🦆", name: "Eistaucher",      x: 318, y: 184, s: 13, a: "float" },
+        { at: 30,  em: "🦅", name: "Weißkopfseeadler", x: 120, y: 58, s: 18, a: "glide" },
+        { at: 38,  em: "🦌", name: "Weißwedelhirsch", x: 205, y: 214, s: 22, a: "bob" },
+        { at: 48,  em: "🐺", name: "Grauwolf",        x: 350, y: 232, s: 24, a: "bob" },
+        { at: 60,  em: "🦌", name: "Wapiti (Elk)",    x: 140, y: 208, s: 30, a: "bob" },
+        { at: 75,  em: "🐻", tint: "brightness(.38) saturate(.6)", name: "Schwarzbär", x: 278, y: 242, s: 30, a: "bob" },
+        { at: 90,  em: "🫎", name: "Elch (Moose)",    x: 62,  y: 212, s: 36, a: "bob" },
+        { at: 110, em: "🐻", name: "Grizzly",         x: 372, y: 206, s: 34, a: "bob" },
+        { at: 135, em: "✨", name: "Nordlichter",     special: "aurora" }
+      ]
+    },
+    ocean: {
+      label: "Unterwasser",
+      plantWord: "Seetang",
+      unlocks: [
+        { at: 2,   em: "🐟", name: "Fischschwarm",    x: 80,  y: 80,  s: 11, a: "swim", school: true },
+        { at: 5,   em: "🦀", name: "Krabbe",          x: 56,  y: 242, s: 15, a: "bob" },
+        { at: 8,   em: "🦐", name: "Garnele",         x: 302, y: 236, s: 13, a: "bob" },
+        { at: 12,  em: "🐡", name: "Kugelfisch",      x: 336, y: 140, s: 17, a: "float" },
+        { at: 17,  em: "🐠", name: "Tropenfisch",     x: 150, y: 160, s: 17, a: "swim" },
+        { at: 23,  em: "🐙", name: "Oktopus",         x: 232, y: 240, s: 22, a: "bob" },
+        { at: 30,  em: "🪼", name: "Qualle",          x: 350, y: 72,  s: 22, a: "float" },
+        { at: 38,  em: "🐢", name: "Meeresschildkröte", x: 120, y: 120, s: 26, a: "swim" },
+        { at: 48,  em: "🦭", name: "Seehund",         x: 160, y: 50,  s: 25, a: "swim" },
+        { at: 60,  em: "🐬", name: "Delfin",          x: 252, y: 70,  s: 30, a: "swim" },
+        { at: 75,  em: "🦈", name: "Hai",             x: 176, y: 196, s: 32, a: "swim" },
+        { at: 90,  em: "🐳", name: "Buckelwal",       x: 300, y: 128, s: 44, a: "swim" },
+        { at: 110, em: "🐋", name: "Blauwal",         x: 96,  y: 190, s: 54, a: "swim" },
+        { at: 135, em: "✨", name: "Meeresleuchten",  special: "glow" }
+      ]
+    }
+  };
+
+  /* ---------- Speicher ---------- */
+  var KEY = "habitat-v1";
+  var state;
+
+  function dayKey(d) {
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
+  }
+  function addDays(d, n) { var c = new Date(d.getFullYear(), d.getMonth(), d.getDate()); c.setDate(c.getDate() + n); return c; }
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+
+  function seed() {
+    var today = new Date();
+    function hist(n, skipToday) {
+      var days = {};
+      for (var i = skipToday ? 1 : 0; i < n + (skipToday ? 1 : 0); i++) days[dayKey(addDays(today, -i))] = true;
+      return days;
+    }
+    return {
+      world: "forest",
+      sample: true,
+      habits: [
+        { id: uid(), name: "Laufen gehen", days: hist(9, false) },
+        { id: uid(), name: "20 Min. Englisch", days: hist(6, true) },
+        { id: uid(), name: "Mama anrufen", days: hist(2, false) }
+      ]
+    };
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) { var s = JSON.parse(raw); if (s && Array.isArray(s.habits)) return s; }
+    } catch (e) {}
+    return seed();
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  /* ---------- Streak-Logik ---------- */
+  function streak(h) {
+    var d = new Date();
+    if (!h.days[dayKey(d)]) d = addDays(d, -1); // heute noch offen: Streak zählt bis gestern
+    var n = 0;
+    while (h.days[dayKey(d)]) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function best(h) {
+    var keys = Object.keys(h.days).filter(function (k) { return h.days[k]; }).sort();
+    var bestRun = 0, run = 0, prev = null;
+    keys.forEach(function (k) {
+      var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
+      run = prev && dayKey(addDays(prev, 1)) === k ? run + 1 : 1;
+      if (run > bestRun) bestRun = run;
+      prev = d;
+    });
+    return bestRun;
+  }
+  function totalPoints() { return state.habits.reduce(function (a, h) { return a + streak(h); }, 0); }
+
+  /* ---------- Vorschau ---------- */
+  var previewOn = false, previewPts = 60;
+  function shownPoints() { return previewOn ? previewPts : totalPoints(); }
+  function plantStreaks() {
+    if (!previewOn) return state.habits.map(function (h) { return { name: h.name, s: streak(h), had: best(h) > 0 }; });
+    var list = state.habits.length ? state.habits : [{ name: "" }, { name: "" }, { name: "" }];
+    var each = Math.round(previewPts / list.length);
+    return list.map(function (h) { return { name: h.name, s: each, had: true }; });
+  }
+
+  /* ---------- Szene ---------- */
+  var svg = document.getElementById("scene");
+  var lastRenderedUnlocks = null;
+
+  function plantHeight(s) { return s === 0 ? 10 : Math.min(98, 12 + 16 * Math.log2(1 + s)); }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function rnd(seedNum) { var x = Math.sin(seedNum * 9301 + 49297) * 233280; return x - Math.floor(x); }
+
+  function spruce(x, base, h, fill, dark) {
+    var trunkH = h * 0.14, w = h * 0.5, tiers = 4, out = "";
+    out += '<rect x="' + (x - h * 0.035) + '" y="' + (base - trunkH) + '" width="' + (h * 0.07) + '" height="' + trunkH + '" fill="#5b3a24"/>';
+    for (var i = 0; i < tiers; i++) {
+      var top = base - h + i * (h * 0.2);
+      var bot = base - trunkH * 0.6 - (tiers - 1 - i) * (h * 0.13);
+      var hw = w * (0.32 + 0.68 * (i + 1) / tiers) / 2;
+      out += '<polygon points="' + x + "," + top + " " + (x - hw) + "," + bot + " " + (x + hw) + "," + bot + '" fill="' + (i % 2 ? dark : fill) + '"/>';
+    }
+    return out;
+  }
+
+  function forestScene(pts, plants, unlocked) {
+    var o = "";
+    o += '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (pts >= 135 ? "#14213d" : "#a9c9dc") + '"/><stop offset="1" stop-color="' + (pts >= 135 ? "#3d5a80" : "#e8efe4") + '"/></linearGradient>' +
+         '<linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f9fb4"/><stop offset="1" stop-color="#3f6f86"/></linearGradient>' +
+         '<linearGradient id="aur" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#46f2a4" stop-opacity="0"/><stop offset=".4" stop-color="#46f2a4" stop-opacity=".75"/><stop offset=".7" stop-color="#7cc8ff" stop-opacity=".6"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></linearGradient></defs>';
+    o += '<rect width="400" height="250" fill="url(#sky)"/>';
+    if (pts >= 135) {
+      for (var st = 0; st < 40; st++) o += '<circle cx="' + (rnd(st) * 400).toFixed(1) + '" cy="' + (rnd(st + 99) * 90).toFixed(1) + '" r="' + (0.4 + rnd(st + 7) * 0.8).toFixed(2) + '" fill="#fff" opacity=".8"/>';
+      o += '<g class="aurora"><path d="M-10 70 C 60 20, 120 90, 200 40 S 330 60, 410 20 L 410 60 C 330 100, 260 70, 200 85 S 60 70, -10 110 Z" fill="url(#aur)"/>' +
+           '<path d="M-10 40 C 80 10, 150 60, 240 25 S 360 40, 410 10 L 410 30 C 350 60, 260 45, 230 55 S 80 40, -10 70 Z" fill="url(#aur)" opacity=".6"/></g>';
+    } else {
+      o += '<circle cx="330" cy="52" r="16" fill="#fff6d8" opacity=".9"/>';
+    }
+    // Rocky Mountains
+    o += '<polygon points="0,150 55,72 95,118 150,58 205,128 250,80 300,132 350,66 400,120 400,170 0,170" fill="#7b8fa0"/>';
+    o += '<polygon points="55,72 44,88 52,86 60,92 66,86 74,90" fill="#f4f7fa"/><polygon points="150,58 138,76 148,73 156,80 163,73 170,78" fill="#f4f7fa"/><polygon points="350,66 338,84 347,80 356,87 362,80 368,84" fill="#f4f7fa"/>';
+    // ferne Baumreihe
+    var row = "";
+    for (var t = 0; t < 34; t++) {
+      var tx = t * 12 + rnd(t) * 6, th = 22 + rnd(t + 3) * 14;
+      row += '<polygon points="' + tx + "," + (172 - th) + " " + (tx - 6) + ",176 " + (tx + 6) + ',176" fill="#2f4a3a"/>';
+    }
+    o += row + '<rect x="0" y="174" width="400" height="80" fill="#5f7f4a"/>';
+    o += '<ellipse cx="300" cy="186" rx="88" ry="11" fill="url(#lake)"/>';
+    o += '<path d="M0 205 Q 100 194 200 204 T 400 200 L 400 250 L 0 250 Z" fill="#6f9152"/>';
+    // Pflanzen (eine pro Gewohnheit)
+    o += plantsRow(plants, function (x, base, p) {
+      var h = plantHeight(p.s);
+      if (p.s === 0) {
+        var col = p.had ? "#9a7b4f" : "#7fae5b";
+        return '<g><path d="M' + x + " " + base + " q -1 -6 0 -10" + '" stroke="' + col + '" stroke-width="1.6" fill="none"/><ellipse cx="' + (x - 3) + '" cy="' + (base - 8) + '" rx="3" ry="1.5" fill="' + col + '"/><ellipse cx="' + (x + 3) + '" cy="' + (base - 9) + '" rx="3" ry="1.5" fill="' + col + '"/></g>';
+      }
+      return '<g class="sway">' + spruce(x, base, h, "#2f6b45", "#245a39") + "</g>";
+    });
+    o += animals(unlocked);
+    return o;
+  }
+
+  function oceanScene(pts, plants, unlocked) {
+    var o = "";
+    var deep = pts >= 135;
+    o += '<defs><linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (deep ? "#0b3d63" : "#2a8fb8") + '"/><stop offset="1" stop-color="' + (deep ? "#031426" : "#0b3c63") + '"/></linearGradient>' +
+         '<linearGradient id="ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+         '<radialGradient id="glow"><stop offset="0" stop-color="#7ff9ff" stop-opacity=".95"/><stop offset="1" stop-color="#7ff9ff" stop-opacity="0"/></radialGradient></defs>';
+    o += '<rect width="400" height="250" fill="url(#water)"/>';
+    o += '<g class="shimmer"><polygon points="60,0 95,0 150,250 70,250" fill="url(#ray)"/><polygon points="190,0 210,0 250,250 200,250" fill="url(#ray)"/><polygon points="290,0 330,0 380,250 300,250" fill="url(#ray)"/></g>';
+    // Blasen
+    for (var b = 0; b < 14; b++) o += '<circle cx="' + (rnd(b) * 400).toFixed(1) + '" cy="' + (20 + rnd(b + 40) * 180).toFixed(1) + '" r="' + (0.8 + rnd(b + 3) * 1.8).toFixed(2) + '" fill="none" stroke="#cfefff" stroke-opacity=".5" stroke-width=".6"/>';
+    // Felsen & Sand
+    o += '<path d="M0 200 Q 30 170 70 190 Q 90 175 110 198 L 110 250 L 0 250 Z" fill="#1f4a5c"/>';
+    o += '<path d="M300 205 Q 330 168 372 186 Q 395 180 400 190 L 400 250 L 300 250 Z" fill="#1f4a5c"/>';
+    o += '<path d="M0 222 Q 90 208 190 220 T 400 214 L 400 250 L 0 250 Z" fill="#d9c08d"/>';
+    o += '<path d="M0 236 Q 120 228 230 238 T 400 232 L 400 250 L 0 250 Z" fill="#c8ab73"/>';
+    o += '<circle cx="150" cy="238" r="2" fill="#f0dfb8"/><circle cx="270" cy="244" r="1.6" fill="#f0dfb8"/>';
+    if (deep) {
+      for (var g = 0; g < 26; g++) {
+        var gx = (rnd(g + 200) * 400).toFixed(1), gy = (30 + rnd(g + 300) * 190).toFixed(1);
+        o += '<circle class="shimmer" style="animation-delay:' + (rnd(g) * -6).toFixed(2) + 's" cx="' + gx + '" cy="' + gy + '" r="' + (2 + rnd(g + 5) * 4).toFixed(1) + '" fill="url(#glow)"/>';
+      }
+    }
+    o += plantsRow(plants, function (x, base, p) {
+      var h = plantHeight(p.s);
+      if (p.s === 0) {
+        var c0 = p.had ? "#8a7f6a" : "#e98a7b";
+        return '<g><circle cx="' + x + '" cy="' + (base - 3) + '" r="3.5" fill="' + c0 + '"/><circle cx="' + (x + 3) + '" cy="' + (base - 6) + '" r="2" fill="' + c0 + '"/></g>';
+      }
+      var path = "M" + x + " " + base, leaves = "", segs = 6;
+      for (var i = 1; i <= segs; i++) {
+        var y = base - h * i / segs, dx = (i % 2 ? 1 : -1) * (2 + h * 0.03);
+        path += " Q " + (x + dx) + " " + (y + h / segs / 2) + " " + x + " " + y;
+        if (i < segs) leaves += '<ellipse cx="' + (x + dx * 1.6) + '" cy="' + y + '" rx="' + (2 + h * 0.05) + '" ry="' + (1 + h * 0.015) + '" fill="#8fae3a" transform="rotate(' + (dx > 0 ? -25 : 25) + " " + (x + dx * 1.6) + " " + y + ')"/>';
+      }
+      var coral = h > 50 ? '<path d="M' + (x + 10) + " " + base + " l0 -14 m0 6 l-5 -6 m5 2 l5 -7" + '" stroke="#ff7f6e" stroke-width="2.4" stroke-linecap="round" fill="none"/>' : "";
+      return coral + '<g class="sway"><path d="' + path + '" stroke="#6f9a2c" stroke-width="' + (1.6 + h * 0.03).toFixed(2) + '" fill="none" stroke-linecap="round"/>' + leaves + "</g>";
+    });
+    o += animals(unlocked);
+    return o;
+  }
+
+  function plantsRow(plants, draw) {
+    var o = "", n = plants.length;
+    plants.forEach(function (p, i) {
+      var x = Math.round(36 + 328 * (i + 0.5) / n);
+      var base = 238 + (i % 2) * 6;
+      o += draw(x, base, p);
+      if (p.name) o += '<text x="' + x + '" y="' + (base + 7) + '" font-size="5.5" text-anchor="middle" fill="#ffffff" font-family="Figtree, system-ui, sans-serif" font-weight="600" style="paint-order:stroke" stroke="rgba(0,0,0,.45)" stroke-width="1.4">' + esc(p.name.length > 16 ? p.name.slice(0, 15) + "…" : p.name) + "</text>";
+    });
+    return o;
+  }
+
+  function animals(unlocked) {
+    var o = "";
+    unlocked.forEach(function (u, i) {
+      if (u.special) return;
+      var isNew = lastRenderedUnlocks && lastRenderedUnlocks.indexOf(u.name) === -1;
+      var delay = "animation-delay:" + (rnd(i + 11) * -8).toFixed(2) + "s";
+      var glyph = function (dx, dy, size) {
+        return '<text x="' + (u.x + dx) + '" y="' + (u.y + dy) + '" font-size="' + size + '" text-anchor="middle"' + (u.tint ? ' style="filter:' + u.tint + '"' : "") + ">" + u.em + "</text>";
+      };
+      var inner = u.school ? glyph(0, 0, u.s) + glyph(14, -8, u.s * 0.85) + glyph(26, 4, u.s * 0.9) + glyph(10, 10, u.s * 0.75) : glyph(0, 0, u.s);
+      o += '<g class="' + u.a + '" style="' + delay + '"><g' + (isNew ? ' class="appear"' : "") + ">" + inner + "</g></g>";
+    });
+    return o;
+  }
+
+  function unlockedFor(world, pts) { return WORLDS[world].unlocks.filter(function (u) { return pts >= u.at; }); }
+
+  function renderScene() {
+    var pts = shownPoints(), w = state.world;
+    var un = unlockedFor(w, pts);
+    var plants = plantStreaks();
+    if (!plants.length) plants = [];
+    svg.innerHTML = w === "forest" ? forestScene(pts, plants, un) : oceanScene(pts, plants, un);
+    svg.setAttribute("aria-label", WORLDS[w].label + " mit " + un.length + " freigeschalteten Bewohnern");
+    lastRenderedUnlocks = un.map(function (u) { return u.name; });
+    var badge = document.getElementById("badge");
+    badge.textContent = previewOn ? "Vorschau · " + pts + " Pkt." : WORLDS[w].label;
+    badge.dataset.preview = previewOn ? "true" : "false";
+  }
+
+  /* ---------- Fortschritt & Sammlung ---------- */
+  function renderProgress() {
+    var pts = totalPoints(), list = WORLDS[state.world].unlocks;
+    document.getElementById("points").firstChild.nodeValue = pts;
+    var next = list.filter(function (u) { return u.at > pts; })[0];
+    var prevAt = list.filter(function (u) { return u.at <= pts; }).reduce(function (a, u) { return Math.max(a, u.at); }, 0);
+    var text = document.getElementById("next-text"), bar = document.getElementById("next-bar");
+    if (next) {
+      text.textContent = "Noch " + (next.at - pts) + " Pkt. bis " + next.em + " " + next.name;
+      bar.style.width = Math.round(100 * (pts - prevAt) / (next.at - prevAt)) + "%";
+    } else {
+      text.textContent = "Alles freigeschaltet. Deine Welt ist komplett!";
+      bar.style.width = "100%";
+    }
+  }
+
+  function renderCollection() {
+    var pts = totalPoints(), list = WORLDS[state.world].unlocks, got = 0;
+    var ul = document.getElementById("collection");
+    ul.innerHTML = list.map(function (u) {
+      var on = pts >= u.at; if (on) got++;
+      return '<li class="' + (on ? "" : "locked") + '"><span class="em" aria-hidden="true"' + (u.tint && on ? ' style="filter:' + u.tint + '"' : "") + ">" + u.em + '</span><span class="nm">' + esc(u.name) + '</span><span class="pt">ab ' + u.at + " Pkt.</span></li>";
+    }).join("");
+    document.getElementById("coll-count").textContent = got + " von " + list.length + " freigeschaltet";
+  }
+
+  /* ---------- Gewohnheiten ---------- */
+  var WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  var armedDelete = null;
+
+  function renderHabits() {
+    var ul = document.getElementById("habits"), today = new Date();
+    document.getElementById("today-label").textContent = today.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("sample-note").hidden = !state.sample;
+    if (!state.habits.length) {
+      ul.innerHTML = '<li><p class="empty">Noch keine Gewohnheit. Leg unten deine erste an. Jede Gewohnheit pflanzt einen ' + WORLDS[state.world].plantWord + " in deine Welt.</p></li>";
+      return;
+    }
+    ul.innerHTML = state.habits.map(function (h) {
+      var s = streak(h), b = best(h), doneToday = !!h.days[dayKey(today)];
+      var week = "";
+      for (var i = 6; i >= 1; i--) {
+        var d = addDays(today, -i), k = dayKey(d);
+        week += '<button type="button" class="day" data-id="' + h.id + '" data-day="' + k + '" aria-pressed="' + !!h.days[k] + '" aria-label="' + d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "numeric" }) + '">' + WD[d.getDay()] + "<i></i></button>";
+      }
+      return '<li class="habit">' +
+        '<div class="habit-main"><div class="habit-title"><strong>' + esc(h.name) + '</strong><span class="streak"><b>' + s + "</b> " + (s === 1 ? "Tag" : "Tage") + " Streak · Rekord " + b + "</span></div>" +
+        '<div class="week">' + week + "</div></div>" +
+        '<button type="button" class="check" data-id="' + h.id + '" data-day="' + dayKey(today) + '" aria-pressed="' + doneToday + '" aria-label="' + esc(h.name) + ' heute erledigt">' + (doneToday ? "✓" : "<span>Heute</span>") + "</button>" +
+        '<div class="habit-actions"><button type="button" class="del" data-del="' + h.id + '" data-armed="' + (armedDelete === h.id) + '">' + (armedDelete === h.id ? "Wirklich löschen?" : "Löschen") + "</button></div>" +
+        "</li>";
+    }).join("");
+  }
+
+  function renderAll() {
+    document.documentElement.dataset.world = state.world;
+    document.querySelector('meta[name="theme-color"]').setAttribute("content", state.world === "ocean" ? "#071a2b" : "#e9eee6");
+    ["forest", "ocean"].forEach(function (w) { document.getElementById("w-" + w).setAttribute("aria-pressed", state.world === w); });
+    renderScene(); renderProgress(); renderCollection(); renderHabits();
+    document.getElementById("backup").value = JSON.stringify(state);
+  }
+
+  /* ---------- Toast ---------- */
+  var toastTimer;
+  function toast(msg) {
+    var t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+  }
+
+  /* ---------- Ereignisse ---------- */
+  function toggleDay(id, day) {
+    var h = state.habits.find(function (x) { return x.id === id; });
+    if (!h) return;
+    var before = totalPoints();
+    if (h.days[day]) delete h.days[day]; else h.days[day] = true;
+    save();
+    var after = totalPoints();
+    var gained = WORLDS[state.world].unlocks.filter(function (u) { return u.at > before && u.at <= after; });
+    var lost = WORLDS[state.world].unlocks.filter(function (u) { return u.at <= before && u.at > after; });
+    renderAll();
+    if (gained.length) toast("Neu in deiner Welt: " + gained.map(function (u) { return u.em + " " + u.name; }).join(", "));
+    else if (lost.length) toast(lost.map(function (u) { return u.name; }).join(", ") + " ist weitergezogen.");
+  }
+
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest("button");
+    if (!t) return;
+    if (t.dataset.world) {
+      state.world = t.dataset.world; lastRenderedUnlocks = null; save(); renderAll(); return;
+    }
+    if (t.dataset.id && t.dataset.day) { toggleDay(t.dataset.id, t.dataset.day); return; }
+    if (t.dataset.del) {
+      if (armedDelete === t.dataset.del) {
+        state.habits = state.habits.filter(function (h) { return h.id !== t.dataset.del; });
+        armedDelete = null; save(); renderAll();
+      } else {
+        armedDelete = t.dataset.del; renderHabits();
+        setTimeout(function () { if (armedDelete) { armedDelete = null; renderHabits(); } }, 4000);
+      }
+      return;
+    }
+    if (t.id === "clear-sample") {
+      state.habits = []; state.sample = false; lastRenderedUnlocks = null; save(); renderAll(); return;
+    }
+    if (t.id === "copy-backup") {
+      var ta = document.getElementById("backup");
+      var done = function () { toast("Backup kopiert."); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); toast("Text markiert. Jetzt kopieren."); });
+      } else { ta.select(); toast("Text markiert. Jetzt kopieren."); }
+      return;
+    }
+    if (t.id === "import-backup") {
+      try {
+        var s = JSON.parse(document.getElementById("backup").value);
+        if (!s || !Array.isArray(s.habits)) throw new Error();
+        state = s; state.sample = false; save(); renderAll(); toast("Backup geladen.");
+      } catch (err) { toast("Das ist kein gültiges Backup. Füge den kompletten kopierten Text ein."); }
+    }
+  });
+
+  document.getElementById("add-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var input = document.getElementById("new-habit"), name = input.value.trim();
+    if (!name) { input.focus(); return; }
+    if (state.sample) { state.habits = []; state.sample = false; }
+    state.habits.push({ id: uid(), name: name, days: {} });
+    input.value = ""; save(); renderAll();
+    toast("Neuer " + WORLDS[state.world].plantWord + " gepflanzt: " + name);
+  });
+
+  var pvOn = document.getElementById("preview-on"), pvPts = document.getElementById("preview-pts"), pvOut = document.getElementById("preview-out");
+  pvOn.addEventListener("change", function () { previewOn = pvOn.checked; pvPts.disabled = !previewOn; renderScene(); });
+  pvPts.addEventListener("input", function () { previewPts = +pvPts.value; pvOut.textContent = previewPts + " Pkt."; if (previewOn) renderScene(); });
+
+  // Um Mitternacht (oder beim Zurückkehren zur App) neu rechnen
+  var shownDay = dayKey(new Date());
+  function maybeRollover() { var k = dayKey(new Date()); if (k !== shownDay) { shownDay = k; renderAll(); } }
+  document.addEventListener("visibilitychange", maybeRollover);
+  setInterval(maybeRollover, 60000);
+
+  state = load();
+  renderAll();
+})();
+</script>
+</body>
+</html>
