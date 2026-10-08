@@ -1,197 +1,187 @@
-import { useEffect, useState } from "react";
-import { Ring } from "../components/ui";
+import { useState } from "react";
+import { Sheet } from "../components/Sheet";
+import { Tree } from "../components/Tree";
 import { useStore } from "../data/StoreProvider";
-import { HABITS } from "../domain/habits";
-import { cardSummary, entriesOn } from "../domain/status";
-import { focusLine, periodStats } from "../domain/stats";
-import type { CardState, HabitId } from "../domain/types";
-import type { World } from "../domain/world";
-import { addDays, formatLong, relativeLabel, weekDays, weekStart, type DayKey } from "../lib/date";
-import { NoReelsSheet } from "../sheets/NoReelsSheet";
-import { SessionSheet } from "../sheets/SessionSheet";
-import { SleepSheet } from "../sheets/SleepSheet";
-import { SupplementsSheet } from "../sheets/SupplementsSheet";
-import { TrainingSheet } from "../sheets/TrainingSheet";
+import { CREATE_OPTIONS, SPORT_PREFIX, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
+import { STAGES, activeHabits, dayProgress, isDone, stageOf } from "../domain/progress";
+import type { HabitId } from "../domain/types";
+import { formatLong, relativeLabel, weekDays, weekStart, weekdayShort, fromKey, type DayKey } from "../lib/date";
 
-const STATE_LABEL: Record<CardState, string> = {
-  empty: "Not logged",
-  done: "Done",
-  partial: "Partly",
-  rest: "Rest",
-  skipped: "Not today",
-};
-
-function StateMark({ state }: { state: CardState }) {
-  return (
-    <span className={`mark ${state}`} aria-label={STATE_LABEL[state]}>
-      {state === "done" ? "✓" : state === "rest" ? "–" : ""}
-    </span>
-  );
-}
-
-export function TodayView({
-  date,
-  today,
-  setDate,
-  goSettings,
-  goForest,
-  world,
-}: {
-  date: DayKey;
-  today: DayKey;
-  setDate: (d: DayKey) => void;
-  goSettings: () => void;
-  goForest: () => void;
-  world: World;
-}) {
-  const { data } = useStore();
+export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void }) {
+  const { data, setHabit } = useStore();
   const s = data.settings;
-  const [open, setOpen] = useState<HabitId | null>(null);
-  const active = HABITS.filter((h) => s.active[h.id]);
-  const week = periodStats(weekDays(weekStart(date)), data.entries, s);
+  const log = data.days[date];
+  const { done, total, p } = dayProgress(log, s);
+  const stage = stageOf(p);
+  const doneIds = activeHabits(s).filter((h) => isDone(log, h.id)).map((h) => h.id);
+  const [picker, setPicker] = useState<HabitId | null>(null);
+  const left = total - done;
 
-  const summaries = active.map((h) => ({ h, sum: cardSummary(h.id, entriesOn(data.entries, date, h.id), s) }));
-  const logged = summaries.filter((x) => x.sum.state !== "empty").length;
-
-  /** For an untouched weekly habit, the most useful line is where the week stands. */
-  const weekLine = (id: HabitId): string | null => {
-    const t = s.targets;
-    switch (id) {
-      case "training":
-        return `Strength ${week.strength}/${t.strength} · Swim ${week.swim}/${t.swim} this week`;
-      case "spanish":
-        return `${week.spanish}/${t.spanish} this week · ${week.spanishMin} min`;
-      case "driving":
-        return `${week.driving}/${t.driving} this week`;
-      case "create":
-        return `${week.create}/${t.create} this week${week.videos ? ` · ${week.videos} posted` : ""}`;
-      default:
-        return null;
-    }
+  const tap = (h: HabitDef) => {
+    if (h.choice) setPicker(h.id);
+    else setHabit(date, h.id, isDone(log, h.id) ? [] : ["done"]);
   };
 
   return (
     <div className="view">
-      <header className="today-head">
-        <div className="day-nav">
-          <button className="icon-btn" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">
-            ‹
-          </button>
-          <div>
-            <h1>{relativeLabel(date, today)}</h1>
-            <p className="muted">{formatLong(date)}</p>
-          </div>
-          <button className="icon-btn" onClick={() => setDate(addDays(date, 1))} aria-label="Next day" disabled={date >= today}>
-            ›
-          </button>
+      <header className="head">
+        <div>
+          <h1>{relativeLabel(date, today)}</h1>
+          <p className="muted">{formatLong(date)}</p>
         </div>
-        <div className="today-ring" aria-label={`${logged} of ${active.length} logged`}>
-          <Ring value={active.length ? logged / active.length : 0} size={52} />
-          <span className="mono">
-            {logged}/{active.length}
-          </span>
-        </div>
+        {date !== today && (
+          <button className="pill-btn" onClick={() => setDate(today)}>
+            Back to today
+          </button>
+        )}
       </header>
 
-      {date === today ? (
-        <p className="focus">{focusLine(today, data.entries, s)}</p>
-      ) : (
-        <button className="focus link" onClick={() => setDate(today)}>
-          Logging for {formatLong(date)} · back to today ›
-        </button>
-      )}
+      <section className={`tree-card stage-${stage}`} aria-live="polite">
+        <Tree p={p} done={doneIds} label={`${STAGES[stage]}: ${done} of ${total} habits done`} />
+        <div className="tree-info">
+          <p className="tree-count">
+            <span className="big">{done}</span>
+            <span className="of">/ {total}</span>
+          </p>
+          <p className="tree-stage">{STAGES[stage]}</p>
+          <div className="bar" aria-hidden="true">
+            <i style={{ width: `${p * 100}%` }} />
+          </div>
+          <p className="muted small">{left === 0 ? "Everything done. Full tree! 🌳" : `${left} more ${left === 1 ? "check" : "checks"} for a full tree`}</p>
+        </div>
+      </section>
 
-      <button className={`forest-strip${world.thisWeek.strong ? " done" : ""}`} onClick={goForest}>
-        <span className="fs-icon" aria-hidden="true">
-          🌲
-        </span>
-        <span className="fs-text">
-          {world.thisWeek.strong
-            ? "Strong week ✓ · a new resident moved in"
-            : `${world.thisWeek.hit}/${world.thisWeek.needed} targets → ${world.next}`}
-        </span>
-        <span className="fs-arrow" aria-hidden="true">
-          ›
-        </span>
-      </button>
-
-      <ul className="cards">
-        {summaries.map(({ h, sum }) => {
-          const wl = sum.state === "empty" ? weekLine(h.id) : null;
+      <ul className="habits">
+        {activeHabits(s).map((h) => {
+          const on = isDone(log, h.id);
+          const items = log?.[h.id] ?? [];
+          const sub = on && h.choice ? items.map(activityLabel).join(" + ") : h.hint;
           return (
             <li key={h.id}>
-              <button className={`card ${sum.state}`} onClick={() => setOpen(h.id)}>
-                <span className="card-icon" aria-hidden="true">
+              <button
+                className={`habit${on ? " on" : ""}`}
+                onClick={() => tap(h)}
+                aria-pressed={h.choice ? undefined : on}
+                aria-haspopup={h.choice ? "dialog" : undefined}
+                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && h.choice ? `, ${sub}` : ""}`}
+              >
+                <span className="habit-icon" aria-hidden="true">
                   {h.icon}
                 </span>
-                <span className="card-text">
-                  <span className="card-title">{h.name}</span>
-                  <span className="card-line">{wl ?? sum.line}</span>
+                <span className="habit-text">
+                  <span className="habit-name">{h.name}</span>
+                  <span className="habit-sub">{sub}</span>
                 </span>
-                <StateMark state={sum.state} />
+                <span className="check" aria-hidden="true" style={on ? { background: h.color, borderColor: h.color } : undefined}>
+                  {on ? "✓" : ""}
+                </span>
               </button>
             </li>
           );
         })}
       </ul>
 
-      <MemoryField date={date} />
+      <WeekStrip date={date} today={today} setDate={setDate} />
 
-      {open === "sleep" && <SleepSheet date={date} onClose={() => setOpen(null)} />}
-      {open === "training" && <TrainingSheet date={date} onClose={() => setOpen(null)} />}
-      {(open === "spanish" || open === "create" || open === "driving") && (
-        <SessionSheet key={open} habit={open} date={date} onClose={() => setOpen(null)} />
-      )}
-      {open === "supplements" && (
-        <SupplementsSheet
-          date={date}
-          onClose={() => setOpen(null)}
-          onOpenSettings={() => {
-            setOpen(null);
-            goSettings();
-          }}
-        />
-      )}
-      {open === "noReels" && <NoReelsSheet date={date} onClose={() => setOpen(null)} />}
+      {picker === "training" && <TrainingPicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "create" && <CreatePicker date={date} onClose={() => setPicker(null)} />}
     </div>
   );
 }
 
-function MemoryField({ date }: { date: DayKey }) {
-  const { data, setNote } = useStore();
-  const saved = data.notes.find((n) => n.date === date)?.text ?? "";
-  const [text, setText] = useState(saved);
-  const [flash, setFlash] = useState(false);
-  useEffect(() => setText(saved), [saved, date]);
-
-  const commit = () => {
-    if (text.trim() === saved) return;
-    setNote(date, text);
-    setFlash(true);
-    setTimeout(() => setFlash(false), 1200);
-  };
-
+function WeekStrip({ date, today, setDate }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void }) {
+  const { data } = useStore();
+  const s = data.settings;
   return (
-    <section className="memory">
-      <label htmlFor="memory-input" className="memory-label">
-        One thing from today <span className="muted">· optional</span>
-      </label>
-      <div className="memory-row">
-        <input
-          id="memory-input"
-          className="text-input"
-          value={text}
-          maxLength={120}
-          placeholder="Saw the northern lights."
-          onChange={(e) => setText(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-          enterKeyHint="done"
-        />
-        <span className={`saved${flash ? " show" : ""}`} aria-live="polite">
-          {flash ? "Saved" : ""}
-        </span>
-      </div>
+    <section className="week">
+      <h2 className="section-title">This week</h2>
+      <ul className="week-row">
+        {weekDays(weekStart(date)).map((d) => {
+          const log = data.days[d];
+          const { p, done, total } = dayProgress(log, s);
+          const future = d > today;
+          return (
+            <li key={d}>
+              <button
+                className={`week-day${d === date ? " sel" : ""}${d === today ? " today" : ""}`}
+                disabled={future}
+                onClick={() => setDate(d)}
+                aria-label={`${formatLong(d)}: ${done} of ${total} done`}
+                aria-current={d === date ? "date" : undefined}
+              >
+                <Tree p={future ? 0 : p} done={activeHabits(s).filter((h) => isDone(log, h.id)).map((h) => h.id)} size={40} mini />
+                <span>{weekdayShort(d).slice(0, 2)}</span>
+                <span className="muted">{fromKey(d).getDate()}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </section>
+  );
+}
+
+function ChoiceList({ options, selected, onToggle }: { options: { id: string; label: string; icon: string }[]; selected: string[]; onToggle: (id: string) => void }) {
+  return (
+    <ul className="choices">
+      {options.map((o) => {
+        const on = selected.includes(o.id);
+        return (
+          <li key={o.id}>
+            <button className={`choice${on ? " on" : ""}`} aria-pressed={on} onClick={() => onToggle(o.id)}>
+              <span aria-hidden="true">{o.icon}</span>
+              <span className="choice-label">{o.label}</span>
+              <span className="check" aria-hidden="true">
+                {on ? "✓" : ""}
+              </span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function TrainingPicker({ date, onClose }: { date: DayKey; onClose: () => void }) {
+  const { data, setHabit, updateSettings } = useStore();
+  const selected = data.days[date]?.training ?? [];
+  const [newSport, setNewSport] = useState("");
+  const toggle = (id: string) => setHabit(date, "training", selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const options = [
+    ...TRAINING_FIXED,
+    ...data.settings.sports.map((name) => ({ id: SPORT_PREFIX + name, label: name, icon: "🏐" })),
+  ];
+  return (
+    <Sheet title="What did you do?" onClose={onClose}>
+      <ChoiceList options={options} selected={selected} onToggle={toggle} />
+      <form
+        className="add-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const name = newSport.trim();
+          if (!name) return;
+          if (!data.settings.sports.some((x) => x.toLowerCase() === name.toLowerCase())) updateSettings((st) => ({ ...st, sports: [...st.sports, name] }));
+          const id = SPORT_PREFIX + name;
+          if (!selected.includes(id)) setHabit(date, "training", [...selected, id]);
+          setNewSport("");
+        }}
+      >
+        <input className="text-input" value={newSport} onChange={(e) => setNewSport(e.target.value)} placeholder="Other sport, e.g. Hiking" aria-label="Add another sport" maxLength={24} />
+        <button className="secondary" type="submit">
+          Add
+        </button>
+      </form>
+    </Sheet>
+  );
+}
+
+function CreatePicker({ date, onClose }: { date: DayKey; onClose: () => void }) {
+  const { data, setHabit } = useStore();
+  const selected = data.days[date]?.create ?? [];
+  const toggle = (id: string) => setHabit(date, "create", selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  return (
+    <Sheet title="Create" onClose={onClose}>
+      <ChoiceList options={CREATE_OPTIONS} selected={selected} onToggle={toggle} />
+    </Sheet>
   );
 }

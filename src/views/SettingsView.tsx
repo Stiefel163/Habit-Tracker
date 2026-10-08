@@ -1,197 +1,159 @@
 import { useRef, useState, type ReactNode } from "react";
-import { Chips, Stepper, Switch } from "../components/ui";
 import { useToast } from "../components/Toast";
 import { useStore } from "../data/StoreProvider";
-import { newId } from "../data/store";
-import { DEFAULT_SETTINGS } from "../domain/defaults";
-import { HABITS } from "../domain/habits";
-import type { AppData, Settings, Targets } from "../domain/types";
+import { emptyData } from "../domain/defaults";
+import { GOALS, HABITS } from "../domain/habits";
+import { normalize } from "../domain/migrate";
+import type { Settings } from "../domain/types";
 
-function Section({ title, children, hint }: { title: string; children: ReactNode; hint?: string }) {
+function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="panel settings-section">
-      <h2 className="panel-title">{title}</h2>
-      {hint && <p className="muted small section-hint">{hint}</p>}
-      <div className="settings-rows">{children}</div>
+    <section className="panel">
+      <h2 className="section-title">{title}</h2>
+      {hint && <p className="muted small">{hint}</p>}
+      <div className="rows">{children}</div>
     </section>
   );
 }
 
-function Row({ label, children, sub }: { label: string; children: ReactNode; sub?: string }) {
+function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <div className="settings-row">
-      <div>
-        <div>{label}</div>
-        {sub && <div className="muted small">{sub}</div>}
-      </div>
-      {children}
-    </div>
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`switch${checked ? " on" : ""}`} onClick={() => onChange(!checked)}>
+      <span />
+    </button>
   );
 }
 
-const TARGET_ROWS: { key: keyof Targets; label: string; sub: string; max: number }[] = [
-  { key: "strength", label: "Strength training", sub: "sessions per week", max: 7 },
-  { key: "swim", label: "Swimming", sub: "sessions per week", max: 7 },
-  { key: "spanish", label: "Spanish", sub: "days per week", max: 7 },
-  { key: "driving", label: "Driving theory", sub: "days per week", max: 7 },
-  { key: "create", label: "Create", sub: "days per week", max: 7 },
-  { key: "sleep", label: "Sleep on rhythm", sub: "nights per week", max: 7 },
-  { key: "supplements", label: "Supplements", sub: "days per week", max: 7 },
-  { key: "noReels", label: "No reels after waking", sub: "mornings per week", max: 7 },
-];
-
 export function SettingsView() {
-  const { data, updateSettings, importData } = useStore();
+  const { data, updateSettings, replaceAll } = useStore();
   const toast = useToast();
   const s = data.settings;
   const set = (patch: Partial<Settings>) => updateSettings((x) => ({ ...x, ...patch }));
-  const [newSupp, setNewSupp] = useState("");
-  const [confirmReset, setConfirmReset] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const exportJson = JSON.stringify(data, null, 2);
+  const [sport, setSport] = useState("");
+  const [confirmErase, setConfirmErase] = useState(false);
+  const file = useRef<HTMLInputElement>(null);
+  const json = JSON.stringify(data);
 
   return (
     <div className="view">
-      <header className="plain-head">
+      <header className="head">
         <h1>Settings</h1>
       </header>
 
-      <Section title="Habits" hint="Turn off what isn't relevant right now. History stays.">
+      <Section title="Habits" hint="Turn off what you don't need right now. Your history stays.">
         {HABITS.map((h) => (
-          <Row key={h.id} label={`${h.icon}  ${h.name}`}>
-            <Switch checked={s.active[h.id]} onChange={(v) => set({ active: { ...s.active, [h.id]: v } })} label={h.name} />
-          </Row>
+          <div className="row" key={h.id}>
+            <span>
+              <span aria-hidden="true">{h.icon}</span> {h.name}
+            </span>
+            <Switch checked={s.active[h.id]} label={h.name} onChange={(v) => set({ active: { ...s.active, [h.id]: v } })} />
+          </div>
         ))}
       </Section>
 
-      <Section title="Weekly targets" hint="Weekly consistency over perfect streaks. Set targets you can hit on a normal week.">
-        {TARGET_ROWS.map((r) => (
-          <Row key={r.key} label={r.label} sub={r.sub}>
-            <Stepper label={r.label} value={s.targets[r.key]} max={r.max} onChange={(v) => set({ targets: { ...s.targets, [r.key]: v } })} />
-          </Row>
-        ))}
-      </Section>
-
-      <Section title="Sleep">
-        <Row label="Target bedtime">
-          <input className="time-input mono" type="time" value={s.sleep.bed} onChange={(e) => e.target.value && set({ sleep: { ...s.sleep, bed: e.target.value } })} />
-        </Row>
-        <Row label="Target wake-up">
-          <input className="time-input mono" type="time" value={s.sleep.wake} onChange={(e) => e.target.value && set({ sleep: { ...s.sleep, wake: e.target.value } })} />
-        </Row>
-        <Chips<number>
-          label="Tolerance (± minutes)"
-          options={[15, 30, 45, 60]}
-          value={s.sleep.toleranceMin}
-          onChange={(v) => set({ sleep: { ...s.sleep, toleranceMin: v } })}
-        />
-      </Section>
-
-      <Section title="Spanish">
-        <Row label="Minimum session" sub="shorter sessions are saved but don't count">
-          <Chips<number> options={[5, 10, 15, 20]} value={s.spanishMinMinutes} onChange={(v) => set({ spanishMinMinutes: v })} format={(v) => `${v}m`} />
-        </Row>
-      </Section>
-
-      <Section title="Supplements" hint="Your normal setup. Logging pre-checks all active ones.">
-        {s.supplements.map((x) => (
-          <Row key={x.id} label={x.name}>
-            <div className="row-actions">
-              <button
-                className="text-btn"
-                onClick={() => set({ supplements: s.supplements.filter((y) => y.id !== x.id) })}
-                aria-label={`Delete ${x.name}`}
-              >
-                Delete
-              </button>
-              <Switch
-                checked={x.active}
-                label={x.name}
-                onChange={(v) => set({ supplements: s.supplements.map((y) => (y.id === x.id ? { ...y, active: v } : y)) })}
-              />
-            </div>
-          </Row>
+      <Section title="Your sports" hint="Shown when you tap Training. Gym and swimming are always there.">
+        {s.sports.map((name) => (
+          <div className="row" key={name}>
+            <span>🏐 {name}</span>
+            <button className="text-btn" onClick={() => set({ sports: s.sports.filter((x) => x !== name) })} aria-label={`Remove ${name}`}>
+              Remove
+            </button>
+          </div>
         ))}
         <form
           className="add-row"
           onSubmit={(e) => {
             e.preventDefault();
-            const name = newSupp.trim();
-            if (!name) return;
-            set({ supplements: [...s.supplements, { id: newId(), name, active: true }] });
-            setNewSupp("");
+            const n = sport.trim();
+            if (n && !s.sports.includes(n)) set({ sports: [...s.sports, n] });
+            setSport("");
           }}
         >
-          <input className="text-input" placeholder="Add supplement" value={newSupp} onChange={(e) => setNewSupp(e.target.value)} maxLength={30} />
+          <input className="text-input" value={sport} onChange={(e) => setSport(e.target.value)} placeholder="e.g. Hiking" aria-label="New sport" maxLength={24} />
           <button className="secondary" type="submit">
             Add
           </button>
         </form>
       </Section>
 
-      <Section title="No reels after waking" hint="What counts as success? Keep it to one clear rule.">
-        <textarea className="text-input area" rows={3} value={s.noReelsRule} onChange={(e) => set({ noReelsRule: e.target.value })} maxLength={240} />
+      <Section title="Goals" hint="How many times by the end of your exchange.">
+        {GOALS.filter((g) => s.active[g.habit]).map((g) => (
+          <div className="row" key={g.id}>
+            <label htmlFor={`goal-${g.id}`}>
+              <span aria-hidden="true">{g.animal}</span> {g.label}
+            </label>
+            <div className="stepper">
+              <button type="button" aria-label={`Lower ${g.label} goal`} onClick={() => set({ goals: { ...s.goals, [g.id]: Math.max(1, s.goals[g.id] - 1) } })}>
+                −
+              </button>
+              <input
+                id={`goal-${g.id}`}
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={s.goals[g.id]}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (!Number.isNaN(v) && v > 0) set({ goals: { ...s.goals, [g.id]: v } });
+                }}
+              />
+              <button type="button" aria-label={`Raise ${g.label} goal`} onClick={() => set({ goals: { ...s.goals, [g.id]: s.goals[g.id] + 1 } })}>
+                +
+              </button>
+            </div>
+          </div>
+        ))}
       </Section>
 
-      <Section title="General">
-        <Row label="Day rolls over at" sub="logging at 1:00 still counts for the evening before">
-          <Chips<number> options={[0, 2, 4, 5]} value={s.dayStartHour} onChange={(v) => set({ dayStartHour: v })} format={(v) => `${v}:00`} />
-        </Row>
-        <Chips<Settings["appearance"]>
-          label="Appearance"
-          options={[
-            { id: "system", label: "System" },
-            { id: "dark", label: "Dark" },
-            { id: "light", label: "Light" },
-          ]}
-          value={s.appearance}
-          onChange={(v) => set({ appearance: v })}
-        />
+      <Section title="Appearance">
+        <div className="seg" role="radiogroup" aria-label="Appearance">
+          {(["system", "dark", "light"] as const).map((a) => (
+            <button key={a} role="radio" aria-checked={s.appearance === a} className={s.appearance === a ? "on" : ""} onClick={() => set({ appearance: a })}>
+              {a[0].toUpperCase() + a.slice(1)}
+            </button>
+          ))}
+        </div>
       </Section>
 
-      <Section title="Data" hint="Everything is stored on this device. Make a backup now and then, or before switching phones.">
+      <Section title="Backup" hint="Your data lives only on this device. Copy a backup now and then.">
         <div className="btn-row">
           <button
             className="secondary"
-            onClick={() => {
-              const blob = new Blob([exportJson], { type: "application/json" });
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(blob);
-              a.download = `comeback-backup-${new Date().toISOString().slice(0, 10)}.json`;
-              a.click();
-              URL.revokeObjectURL(a.href);
-            }}
-          >
-            Download backup
-          </button>
-          <button
-            className="secondary"
             onClick={() =>
-              navigator.clipboard?.writeText(exportJson).then(
+              navigator.clipboard?.writeText(json).then(
                 () => toast("Backup copied"),
-                () => toast("Copy isn't allowed here. Use Download."),
+                () => toast("Copying isn't allowed here. Use Download."),
               )
             }
           >
             Copy backup
           </button>
-          <button className="secondary" onClick={() => fileRef.current?.click()}>
-            Restore…
+          <button
+            className="secondary"
+            onClick={() => {
+              const a = document.createElement("a");
+              a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+              a.download = `comeback-${new Date().toISOString().slice(0, 10)}.json`;
+              a.click();
+              URL.revokeObjectURL(a.href);
+            }}
+          >
+            Download
+          </button>
+          <button className="secondary" onClick={() => file.current?.click()}>
+            Restore from file
           </button>
           <input
-            ref={fileRef}
+            ref={file}
             type="file"
-            accept="application/json,.json"
+            accept=".json,application/json"
             hidden
             onChange={async (e) => {
               const f = e.target.files?.[0];
               if (!f) return;
               try {
-                const parsed = JSON.parse(await f.text()) as AppData;
-                if (!Array.isArray(parsed.entries)) throw new Error();
-                importData(parsed);
-                toast(`Restored ${parsed.entries.length} entries`);
+                replaceAll(normalize(JSON.parse(await f.text())));
+                toast("Backup restored");
               } catch {
                 toast("That file isn't a Comeback backup.");
               }
@@ -199,24 +161,24 @@ export function SettingsView() {
             }}
           />
         </div>
-        {confirmReset ? (
+        {confirmErase ? (
           <div className="btn-row">
             <button
               className="danger"
               onClick={() => {
-                importData({ entries: [], notes: [], settings: structuredClone(DEFAULT_SETTINGS) });
-                setConfirmReset(false);
-                toast("All data erased");
+                replaceAll(emptyData());
+                setConfirmErase(false);
+                toast("Everything erased");
               }}
             >
-              Erase everything
+              Yes, erase everything
             </button>
-            <button className="secondary" onClick={() => setConfirmReset(false)}>
+            <button className="secondary" onClick={() => setConfirmErase(false)}>
               Cancel
             </button>
           </div>
         ) : (
-          <button className="text-btn" onClick={() => setConfirmReset(true)}>
+          <button className="text-btn" onClick={() => setConfirmErase(true)}>
             Erase all data…
           </button>
         )}

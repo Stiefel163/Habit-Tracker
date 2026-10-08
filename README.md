@@ -1,48 +1,49 @@
 # Comeback
 
-A personal, mobile-first habit tracker for an exchange semester: sleep rhythm, training, Spanish, driving theory, content creation, supplements and no reels after waking. It's built for **fast logging** and **weekly consistency**, not streaks. Every session also builds a pixel-art Canadian forest: groves, a cabin, wildflowers, northern lights and animals that move in during strong weeks. Nothing is ever taken away. The design reasoning is in [`docs/UX.md`](docs/UX.md).
+A personal, mobile-first habit tracker for an exchange semester. You only track **done or not done**, and each check grows **today's tree**.
+
+- **Today:** 7 habits, one tap each. Training lets you pick Gym, Swimming or your own sports (Volleyball, Hiking …). Create lets you pick "worked on content" and/or "published a video". Each check moves the tree through 6 stages (seed → sprout → sapling → young tree → tree → full tree with blossoms) and hangs a fruit in that habit's color.
+- **Forest:** every day becomes a tree in a monthly calendar, sized by how much you did. Tap a day to fix it.
+- **Goals:** semester goals (e.g. 36× Gym, 10× Swimming, 8 videos published) with progress bars. Each goal you reach brings an animal to your forest.
+- **Settings:** turn habits on/off, manage your sports, change goal numbers, and back up your data.
+
+There are no times, no streaks and no red "failed" states. The design notes are in [`docs/UX.md`](docs/UX.md).
 
 ## Run it
 
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm test             # domain logic tests (sleep rhythm, weekly counts, day rollover)
+npm test             # domain tests (tree stages, goal counting, migration, day rollover)
 npm run build        # static site in dist/ (deploy to Vercel, Netlify or GitHub Pages)
 npm run build:single # one self-contained HTML file in dist-single/
 ```
 
-On the phone, open the deployed URL and choose **Add to Home Screen**. The app then runs full-screen like a native app.
+On your phone, open the deployed URL and choose **Add to Home Screen**.
 
-## Stack and structure
+## Structure
 
-React 18 + TypeScript + Vite. There's no backend yet: data is saved in `localStorage` behind a small store interface.
+React 18 + TypeScript + Vite. There's no backend: data is saved in `localStorage` behind a two-method store interface.
 
 ```
 src/
-  lib/          date + clock helpers (local days, 4:00 rollover, Monday weeks)
-  domain/       types, defaults, habit definitions, sleep evaluation, stats   ← pure, tested
-  data/         DataStore interface, LocalStore, React StoreProvider
-  components/   UI primitives (Sheet, Chips, Stepper, Switch, Ring, Toast)
-  sheets/       the fast logging sheets, one per habit type
-  views/        Today, Forest, Week, Month, Settings
-  world/        canvas pixel-forest engine (plain JS + engine.d.ts), fed by domain/world.ts
-supabase/schema.sql   tables + row-level security for cloud sync later
-legacy/               the earlier pixel-forest prototype
+  lib/date.ts        local days, 4:00 rollover, Monday weeks
+  domain/            types, habits & goals, progress (tree stages, goal counts), migration   ← pure, tested
+  data/              DataStore interface, LocalStore, StoreProvider
+  components/        Tree (SVG), Sheet, Toast
+  views/             Today, Forest, Goals, Settings
+supabase/schema.sql  table for cloud sync later
+legacy/              the earlier pixel-forest prototype
 ```
 
-### Data model
+**Data model:** `days["2025-10-08"] = { training: ["gym", "sport:Volleyball"], spanish: ["done"], create: ["published"] }`. A habit is done when its list isn't empty. Data from the first, more detailed version is migrated automatically.
 
-Every log is an `Entry`: `date`, `habit`, `subtype`, `detail`, `durationMin`, `value`, `state` (`done | partial | rest | skipped`), `note`, `data` (sleep times, supplements taken). Multiple entries per habit per day are allowed. Weekly targets count **days**. States that depend on settings (sleep tolerance, Spanish minimum, supplement list) are recomputed on read, so changing a setting updates history consistently.
+**Adding Supabase later:** run `supabase/schema.sql`, implement `DataStore` (`load`, `save`) with `@supabase/supabase-js`, add a magic-link sign-in, and swap the one line in `StoreProvider.tsx`.
 
-### Adding Supabase later
+## Accessibility
 
-1. Create a Supabase project and run `supabase/schema.sql`.
-2. `npm i @supabase/supabase-js`, then write `src/data/supabaseStore.ts` implementing `DataStore` (`load`, `upsertEntry`, `deleteEntry`, `setNote`, `saveSettings`, `replaceAll`). Map `durationMin` ↔ `duration_min`.
-3. Add a sign-in screen (magic link is enough) and swap the one line in `StoreProvider.tsx`:
-   `const store: DataStore = new LocalStore();`
-4. Import your existing data once via **Settings → Data → Restore** with a local backup.
+17px base text, touch targets of at least 56px, and contrast that meets WCAG AA in dark and light mode. State is shown with text and a check mark, never color alone. Toggles use `aria-pressed`, goal bars are real `progressbar`s, sheets move focus in and out, and reduced motion is respected. Every screen passes an axe-core scan with zero violations.
 
 ## Backups
 
-All data is stored on the device. Use **Settings → Data → Download backup** now and then, and always before switching phones or clearing the browser.
+Data lives only on the device: use **Settings → Backup** now and then.
