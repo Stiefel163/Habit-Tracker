@@ -1,6 +1,6 @@
 # Comeback
 
-A personal, mobile-first habit tracker for an exchange semester: sleep rhythm, training, Spanish, driving theory, content creation, supplements and no reels after waking. It's built for **fast logging** and **weekly consistency**, not streaks. The design reasoning is in [`docs/UX.md`](docs/UX.md).
+A personal, mobile-first habit tracker for an exchange semester: sleep rhythm, training, Spanish, driving theory, content creation, supplements and no reels after waking. It's built for **fast logging** and **weekly consistency**, not streaks. Every session also builds a pixel-art Canadian forest: groves, a cabin, wildflowers, northern lights and animals that move in during strong weeks. Nothing is ever taken away. The design reasoning is in [`docs/UX.md`](docs/UX.md).
 
 ## Run it
 
@@ -25,7 +25,8 @@ src/
   data/         DataStore interface, LocalStore, React StoreProvider
   components/   UI primitives (Sheet, Chips, Stepper, Switch, Ring, Toast)
   sheets/       the fast logging sheets, one per habit type
-  views/        Today, Week, Month, Settings
+  views/        Today, Forest, Week, Month, Settings
+  world/        canvas pixel-forest engine (plain JS + engine.d.ts), fed by domain/world.ts
 supabase/schema.sql   tables + row-level security for cloud sync later
 legacy/               the earlier pixel-forest prototype
 ```
