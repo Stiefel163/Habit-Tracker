@@ -5,42 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#e9eee6">
+<meta name="theme-color" content="#0f1626">
 <title>Habitat Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600;700&family=Figtree:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one narrow column — the living world on top, today's habits right under it, the collection below. */
+/* Layout: eine Spalte. Oben die Pixel-Welt (zum Schwenken), darunter Fortschritt, Gewohnheiten und das Tier-Inventar im Stil von Terraria-Panels. */
 :root {
-  /* Welt "Kanadischer Wald": nebliger Morgen, Ahornrot als Akzent */
-  --bg: #e9eee6;
-  --surface: #f7f9f4;
-  --ink: #1f2a22;
-  --muted: #5d6b60;
-  --line: #cfd8cc;
-  --accent: #b9471f;
-  --accent-ink: #ffffff;
-  --good: #3f7d4e;
-  --track: #dde5d9;
-  --font-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --bg: #0f1626;          /* Nachthimmel über dem Wald */
+  --panel: #1d2a4d;       /* Inventar-Blau */
+  --panel-2: #26386a;
+  --edge: #4a62a8;        /* Panel-Rahmen */
+  --ink: #eef1fb;
+  --muted: #a3afd6;
+  --gold: #ffd14a;        /* Münzgold als Akzent */
+  --gold-ink: #2a1d00;
+  --leaf: #6cc24a;        /* erledigt */
+  --leaf-dark: #3f8a2e;
+  --danger: #ff7a6b;
+  --font-pixel: "Pixelify Sans", "Courier New", monospace;
   --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color-scheme: light;
-}
-/* Welt "Unterwasser": tiefes Pazifikblau, sonniges Korallenorange als Akzent */
-:root[data-world="ocean"] {
-  --bg: #071a2b;
-  --surface: #0d2740;
-  --ink: #e4f1f8;
-  --muted: #8fb0c4;
-  --line: #1f4260;
-  --accent: #ffb357;
-  --accent-ink: #1a1206;
-  --good: #4fd1b8;
-  --track: #163552;
   color-scheme: dark;
 }
-
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
@@ -49,177 +36,182 @@ body {
   font: 400 16px/1.5 var(--font-body);
   padding-inline: 16px;
   padding-block: 12px 48px;
-  transition: background .4s ease, color .4s ease;
 }
-.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 20px; }
+.wrap { max-width: 760px; margin: 0 auto; display: grid; gap: 18px; }
 
-/* Kopf */
-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-h1 { font: 400 1.9rem/1.1 var(--font-display); margin: 0; letter-spacing: -.01em; }
-h1 small { display: block; font: 500 .8rem/1.4 var(--font-body); color: var(--muted); letter-spacing: .02em; }
-h2 { font: 400 1.3rem/1.2 var(--font-display); margin: 0; text-wrap: balance; }
-
-.switch { display: inline-flex; background: var(--track); border-radius: 999px; padding: 4px; gap: 4px; }
-.switch button {
-  border: 0; background: transparent; color: var(--muted); font: 600 .9rem var(--font-body);
-  padding: 8px 14px; border-radius: 999px; cursor: pointer;
+.px {
+  clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px);
 }
-.switch button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / .15); }
+.panel { background: var(--panel); border: 2px solid var(--edge); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .04); }
 
-button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
+h1 { font: 700 2.2rem/1 var(--font-pixel); margin: 0; letter-spacing: .02em; color: var(--gold); text-shadow: 2px 2px 0 #6b4a00; }
+.tagline { margin: 4px 0 0; color: var(--muted); font-size: .9rem; }
+h2 { font: 600 1.35rem/1.2 var(--font-pixel); margin: 0; letter-spacing: .02em; }
 
-/* Szene */
-.scene-card { position: relative; border-radius: 20px; overflow: hidden; background: var(--track); box-shadow: 0 8px 30px rgb(0 0 0 / .18); }
-#scene { display: block; width: 100%; height: auto; aspect-ratio: 400 / 250; max-width: 100%; }
-.scene-badge {
-  position: absolute; left: 12px; top: 12px; background: rgb(255 255 255 / .82); color: #1f2a22;
-  font: 600 .78rem var(--font-body); padding: 4px 10px; border-radius: 999px; letter-spacing: .03em;
+button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Welt */
+.world { position: relative; background: #000; border: 3px solid #2b3a66; }
+#world { display: block; width: 100%; height: auto; aspect-ratio: 240 / 150; max-width: 100%; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: pan-y; cursor: grab; }
+#world.dragging { cursor: grabbing; }
+.badge {
+  position: absolute; left: 8px; top: 8px; font: 600 .78rem/1 var(--font-pixel); letter-spacing: .04em;
+  background: rgb(10 14 30 / .72); color: var(--ink); padding: 6px 8px; pointer-events: none;
 }
-:root[data-world="ocean"] .scene-badge { background: rgb(4 20 34 / .7); color: #e4f1f8; }
-.scene-badge[data-preview="true"] { background: var(--accent); color: var(--accent-ink); }
+.badge[data-preview="true"] { background: var(--gold); color: var(--gold-ink); }
+.pan {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 44px; border: 0; cursor: pointer;
+  background: rgb(10 14 30 / .55); color: var(--ink); font: 700 1rem var(--font-pixel);
+}
+.pan.l { left: 6px; } .pan.r { right: 6px; }
+.pan:hover { background: rgb(10 14 30 / .8); }
+.drag-hint {
+  position: absolute; right: 8px; top: 8px; pointer-events: none;
+  font: 600 .75rem var(--font-pixel); background: rgb(10 14 30 / .7); padding: 4px 8px; transition: opacity .6s ease; white-space: nowrap;
+}
+.bubble {
+  position: absolute; transform: translate(-50%, -100%); pointer-events: none; z-index: 2;
+  background: #fff8e1; color: #2a1d00; font: 600 .78rem/1.25 var(--font-pixel); padding: 5px 8px; white-space: nowrap;
+  box-shadow: 0 0 0 2px #2a1d00;
+}
+.bubble small { display: block; font-weight: 400; color: #6b5a33; }
+
+.controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: .85rem; color: var(--muted); }
+.seg { display: inline-flex; gap: 2px; background: #0a1020; padding: 2px; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 600 .78rem var(--font-pixel); padding: 6px 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); }
+.ctl { display: inline-flex; align-items: center; gap: 6px; }
 
 /* Fortschritt */
-.progress { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; align-items: center; }
-.points { font: 400 2.6rem/1 var(--font-display); font-variant-numeric: tabular-nums; }
-.points span { display: block; font: 600 .72rem var(--font-body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-top: 4px; }
-.next { min-width: 0; }
-.next p { margin: 0 0 6px; font-size: .95rem; }
-.bar { height: 10px; background: var(--track); border-radius: 99px; overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--good); border-radius: 99px; transition: width .5s ease; }
-.hint { color: var(--muted); font-size: .85rem; margin: 0; grid-column: 1 / -1; }
+.progress { padding: 14px 16px; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; }
+.points { font: 700 2.8rem/1 var(--font-pixel); color: var(--gold); font-variant-numeric: tabular-nums; text-shadow: 2px 2px 0 #6b4a00; }
+.points span { display: block; font: 600 .7rem var(--font-pixel); color: var(--muted); letter-spacing: .1em; text-transform: uppercase; text-shadow: none; margin-top: 4px; }
+.next { min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; }
+.next canvas { image-rendering: pixelated; grid-row: span 2; }
+.next p { margin: 0; font-size: .95rem; }
+.bar { height: 12px; background: #0a1020; border: 2px solid #0a1020; }
+.bar i { display: block; height: 100%; background: linear-gradient(var(--leaf) 50%, var(--leaf-dark) 50%); transition: width .5s ease; }
+.hint { grid-column: 1 / -1; margin: 4px 0 0; font-size: .85rem; color: var(--muted); }
 
-.preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: .9rem; color: var(--muted); }
+.preview { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: .88rem; color: var(--muted); }
 .preview label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.preview input[type="range"] { flex: 1 1 160px; accent-color: var(--accent); }
-.preview output { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; min-width: 4.5ch; }
+.preview input[type="range"] { flex: 1 1 160px; accent-color: var(--gold); }
+.preview output { font: 600 .9rem var(--font-pixel); color: var(--ink); min-width: 5ch; font-variant-numeric: tabular-nums; }
 
 /* Gewohnheiten */
 section { display: grid; gap: 12px; }
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .sec-head p { margin: 0; color: var(--muted); font-size: .85rem; }
-
 .habits { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.habit {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
-  padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center;
-}
-.habit-main { min-width: 0; display: grid; gap: 8px; }
-.habit-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.habit-title strong { font-weight: 600; font-size: 1.05rem; overflow-wrap: anywhere; }
-.streak { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.streak b { color: var(--accent); }
-.week { display: flex; gap: 6px; flex-wrap: wrap; }
-.day {
-  width: 30px; display: grid; justify-items: center; gap: 2px; background: none; border: 0; padding: 0; cursor: pointer;
-  color: var(--muted); font: 600 .62rem var(--font-body); text-transform: uppercase; letter-spacing: .04em;
-}
-.day i { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--line); display: block; }
-.day[aria-pressed="true"] i { background: var(--good); border-color: var(--good); }
+.habit { padding: 10px 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 8px 12px; align-items: center; }
+.mini { width: 40px; height: 60px; image-rendering: pixelated; align-self: end; }
+.habit-main { min-width: 0; display: grid; gap: 6px; }
+.habit-title { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.habit-title strong { font-weight: 600; font-size: 1.02rem; overflow-wrap: anywhere; }
+.meta { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta b { color: var(--gold); }
+.week { display: flex; flex-wrap: wrap; gap: 5px; }
+.day { width: 28px; display: grid; justify-items: center; gap: 2px; padding: 0; border: 0; background: none; cursor: pointer; color: var(--muted); font: 600 .6rem var(--font-pixel); text-transform: uppercase; }
+.day i { width: 18px; height: 18px; display: block; background: #0a1020; border: 2px solid #3a4a7a; }
+.day[aria-pressed="true"] i { background: var(--leaf); border-color: var(--leaf-dark); }
 .check {
-  width: 56px; height: 56px; border-radius: 50%; border: 3px solid var(--good); background: transparent;
-  color: var(--good); font: 700 1.5rem/1 var(--font-body); cursor: pointer; display: grid; place-items: center;
-  transition: transform .15s ease, background .2s ease;
+  width: 54px; height: 54px; border: 3px solid var(--leaf); background: #0a1020; color: var(--leaf); cursor: pointer;
+  font: 700 .62rem var(--font-pixel); letter-spacing: .06em; text-transform: uppercase; display: grid; place-items: center;
 }
-.check:active { transform: scale(.94); }
-.check[aria-pressed="true"] { background: var(--good); color: var(--surface); }
-.check span { font-size: .6rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-.habit-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
-.del { background: none; border: 0; color: var(--muted); font: 500 .78rem var(--font-body); cursor: pointer; padding: 2px 4px; }
-.del[data-armed="true"] { color: var(--accent); font-weight: 700; }
-
-.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 16px; padding: 18px; color: var(--muted); margin: 0; }
-
-.add { display: flex; gap: 8px; }
-.add input {
-  flex: 1; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line);
-  background: var(--surface); color: var(--ink); font: 400 1rem var(--font-body);
-}
-.btn {
-  border: 0; border-radius: 12px; padding: 12px 18px; background: var(--accent); color: var(--accent-ink);
-  font: 700 .95rem var(--font-body); cursor: pointer;
-}
-.btn.ghost { background: var(--track); color: var(--ink); }
-
-.sample-note { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; font-size: .88rem; background: var(--track); border-radius: 12px; padding: 10px 12px; }
+.check[aria-pressed="true"] { background: var(--leaf); color: #0f2a08; font-size: 1.6rem; }
+.check:active { transform: translateY(1px); }
+.habit-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; margin-top: -4px; }
+.del { border: 0; background: none; color: var(--muted); font: 500 .76rem var(--font-body); cursor: pointer; padding: 2px 4px; }
+.del[data-armed="true"] { color: var(--danger); font-weight: 700; }
+.empty { padding: 16px; color: var(--muted); margin: 0; }
+.sample-note { padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; font-size: .88rem; background: var(--panel-2); }
 .sample-note p { margin: 0; flex: 1 1 220px; }
 
-/* Sammlung */
-.collection { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
-.collection li {
-  background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px 8px;
-  display: grid; justify-items: center; gap: 2px; text-align: center;
-}
-.collection .em { font-size: 1.8rem; line-height: 1.2; }
-.collection .nm { font-size: .78rem; font-weight: 600; line-height: 1.2; }
-.collection .pt { font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.collection li.locked .em { filter: grayscale(1) brightness(.2); opacity: .35; }
-.collection li.locked .nm { color: var(--muted); }
-:root[data-world="ocean"] .collection li.locked .em { filter: grayscale(1) brightness(1.8); opacity: .22; }
+.add { display: flex; gap: 8px; }
+.add input { flex: 1; min-width: 0; padding: 12px 14px; border: 2px solid var(--edge); background: #0a1020; color: var(--ink); font: 400 1rem var(--font-body); }
+.btn { border: 0; padding: 12px 18px; background: var(--gold); color: var(--gold-ink); font: 700 .95rem var(--font-pixel); cursor: pointer; box-shadow: inset 0 -3px 0 rgb(0 0 0 / .25); }
+.btn.ghost { background: var(--panel-2); color: var(--ink); }
 
-details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
-summary { cursor: pointer; font-weight: 600; }
+/* Inventar */
+.inventory { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.slot { padding: 8px 6px; display: grid; justify-items: center; align-content: start; gap: 3px; text-align: center; background: rgb(63 81 168 / .55); border: 2px solid #5a6fc0; }
+.slot canvas { image-rendering: pixelated; max-width: 100%; }
+.slot .pic { height: 52px; display: grid; place-items: end center; }
+.slot .nm { font: 600 .82rem/1.15 var(--font-pixel); }
+.slot .st { font-size: .7rem; color: var(--muted); line-height: 1.25; }
+.slot.locked { background: rgb(20 28 60 / .7); border-color: #2d3b6e; }
+.slot.locked .nm { color: var(--muted); }
+.slot .fam { font: 700 .72rem var(--font-pixel); color: var(--gold); }
+
+details { padding: 12px 14px; }
+summary { cursor: pointer; font: 600 1rem var(--font-pixel); }
 details .inner { display: grid; gap: 10px; margin-top: 10px; }
 details p { margin: 0; font-size: .88rem; color: var(--muted); }
-textarea { width: 100%; min-height: 90px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 400 .78rem/1.4 ui-monospace, Menlo, Consolas, monospace; padding: 8px; }
+textarea { width: 100%; min-height: 90px; border: 2px solid var(--edge); background: #0a1020; color: var(--ink); font: 400 .76rem/1.4 ui-monospace, Menlo, Consolas, monospace; padding: 8px; }
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .toast {
-  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 150%);
-  background: var(--ink); color: var(--bg); padding: 12px 18px; border-radius: 14px; font-weight: 600;
-  box-shadow: 0 10px 30px rgb(0 0 0 / .3); transition: transform .35s ease, visibility .35s; visibility: hidden; max-width: calc(100% - 32px); text-align: center; z-index: 10;
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 160%); visibility: hidden;
+  background: #fff8e1; color: #2a1d00; padding: 10px 16px; font: 600 .95rem var(--font-pixel); box-shadow: 0 0 0 3px #2a1d00, 0 10px 30px rgb(0 0 0 / .4);
+  transition: transform .35s ease, visibility .35s; max-width: calc(100% - 32px); text-align: center; z-index: 10;
 }
 .toast.show { transform: translate(-50%, 0); visibility: visible; }
 
-/* Szenen-Animationen */
-.sway { transform-box: fill-box; transform-origin: 50% 100%; animation: sway 5s ease-in-out infinite alternate; }
-.bob { transform-box: fill-box; transform-origin: 50% 100%; animation: bob 3.2s ease-in-out infinite; }
-.glide { animation: glide 14s ease-in-out infinite alternate; }
-.swim { animation: swim 9s ease-in-out infinite alternate; }
-.float { animation: float 6s ease-in-out infinite; }
-.shimmer { animation: shimmer 6s ease-in-out infinite alternate; }
-.aurora { animation: shimmer 8s ease-in-out infinite alternate; }
-.appear { animation: appear .9s cubic-bezier(.2,1.4,.4,1) both; transform-box: fill-box; transform-origin: 50% 100%; }
-@keyframes sway { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
-@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
-@keyframes glide { from { transform: translate(-30px, 4px); } to { transform: translate(40px, -6px); } }
-@keyframes swim { from { transform: translateX(-18px); } to { transform: translateX(18px); } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-@keyframes shimmer { from { opacity: .45; } to { opacity: 1; } }
-@keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (max-width: 480px) {
+  .habit { grid-template-columns: auto 1fr auto; padding: 10px; }
+  .points { font-size: 2.3rem; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .sway, .bob, .glide, .swim, .float, .shimmer, .aurora, .appear { animation: none !important; }
-  .toast, .bar i, body { transition: none; }
+  .toast, .bar i, .drag-hint { transition: none; }
 }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>Habitat<small>Halte deine Streaks, und deine Welt wächst.</small></h1>
-    <div class="switch" role="group" aria-label="Welt wählen">
-      <button type="button" id="w-forest" data-world="forest">Kanadischer Wald</button>
-      <button type="button" id="w-ocean" data-world="ocean">Unterwasser</button>
+    <div>
+      <h1>Habitat</h1>
+      <p class="tagline">Dein kanadischer Wald wächst mit jeder Streak.</p>
     </div>
   </header>
 
-  <div class="scene-card">
-    <svg id="scene" viewBox="0 0 400 250" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Deine Welt"></svg>
-    <div class="scene-badge" id="badge"></div>
+  <div class="world px">
+    <canvas id="world" width="240" height="150" tabindex="0" aria-label="Dein Wald. Ziehen oder Pfeiltasten zum Schwenken, Tippen auf Tiere und Bäume zeigt Infos."></canvas>
+    <div class="badge" id="badge"></div>
+    <button type="button" class="pan l px" id="pan-l" aria-label="Nach links schauen">◀</button>
+    <button type="button" class="pan r px" id="pan-r" aria-label="Nach rechts schauen">▶</button>
+    <div class="drag-hint" id="drag-hint">◀ ziehen zum Erkunden ▶</div>
+    <div class="bubble" id="bubble" hidden></div>
   </div>
 
-  <div class="progress">
+  <div class="controls">
+    <span class="ctl">Tageszeit
+      <span class="seg" role="group" aria-label="Tageszeit">
+        <button type="button" data-time="auto">Echt</button><button type="button" data-time="day">Tag</button><button type="button" data-time="night">Nacht</button>
+      </span>
+    </span>
+    <span class="ctl">Jahreszeit
+      <span class="seg" role="group" aria-label="Jahreszeit">
+        <button type="button" data-season="auto">Echt</button><button type="button" data-season="spring">Frühling</button><button type="button" data-season="summer">Sommer</button><button type="button" data-season="autumn">Herbst</button><button type="button" data-season="winter">Winter</button>
+      </span>
+    </span>
+  </div>
+
+  <div class="progress panel px">
     <div class="points" id="points">0<span>Punkte</span></div>
     <div class="next">
+      <canvas id="next-icon" width="1" height="1" aria-hidden="true"></canvas>
       <p id="next-text"></p>
       <div class="bar" aria-hidden="true"><i id="next-bar"></i></div>
     </div>
-    <p class="hint">Punkte = Summe deiner aktuellen Streaks. Reißt eine Streak, sinken die Punkte, und die Tiere ziehen wieder weg.</p>
+    <p class="hint">Punkte = Summe deiner aktuellen Streaks. Neue Tiere kommen jung an, wachsen mit jedem Punkt und bekommen Nachwuchs, solange du dranbleibst. Reißt eine Streak, zieht ein Teil wieder weg.</p>
   </div>
 
   <div class="preview">
     <label><input type="checkbox" id="preview-on"> Vorschau</label>
-    <input type="range" id="preview-pts" min="0" max="160" value="60" aria-label="Vorschau-Punkte" disabled>
-    <output id="preview-out" for="preview-pts">60 Pkt.</output>
+    <input type="range" id="preview-pts" min="0" max="200" value="100" aria-label="Vorschau-Punkte" disabled>
+    <output id="preview-out" for="preview-pts">100 Pkt.</output>
   </div>
 
   <section aria-labelledby="h-habits">
@@ -227,33 +219,33 @@ textarea { width: 100%; min-height: 90px; border-radius: 10px; border: 1px solid
       <h2 id="h-habits">Heute</h2>
       <p id="today-label"></p>
     </div>
-    <div class="sample-note" id="sample-note" hidden>
+    <div class="sample-note px" id="sample-note" hidden>
       <p>Das sind Beispiel-Gewohnheiten, damit du siehst, wie es aussieht. Sobald du deine erste eigene anlegst, verschwinden sie.</p>
-      <button type="button" class="btn ghost" id="clear-sample">Beispiele entfernen</button>
+      <button type="button" class="btn ghost px" id="clear-sample">Beispiele entfernen</button>
     </div>
     <ul class="habits" id="habits"></ul>
     <form class="add" id="add-form" autocomplete="off">
-      <input id="new-habit" maxlength="40" placeholder="Neue Gewohnheit, z. B. 20 Min. Englisch" aria-label="Neue Gewohnheit">
-      <button class="btn" type="submit">Hinzufügen</button>
+      <input id="new-habit" class="px" maxlength="40" placeholder="Neue Gewohnheit, z. B. 20 Min. Englisch" aria-label="Neue Gewohnheit">
+      <button class="btn px" type="submit">Pflanzen</button>
     </form>
   </section>
 
-  <section aria-labelledby="h-coll">
+  <section aria-labelledby="h-inv">
     <div class="sec-head">
-      <h2 id="h-coll">Sammlung</h2>
-      <p id="coll-count"></p>
+      <h2 id="h-inv">Bewohner</h2>
+      <p id="inv-count"></p>
     </div>
-    <ul class="collection" id="collection"></ul>
+    <ul class="inventory" id="inventory"></ul>
   </section>
 
-  <details>
+  <details class="panel px">
     <summary>Daten sichern</summary>
     <div class="inner">
       <p>Deine Daten liegen nur in diesem Browser. Kopier den Text, um ein Backup zu machen oder auf ein anderes Gerät umzuziehen.</p>
       <textarea id="backup" aria-label="Backup-Daten"></textarea>
       <div class="row">
-        <button type="button" class="btn ghost" id="copy-backup">Kopieren</button>
-        <button type="button" class="btn ghost" id="import-backup">Einfügen &amp; laden</button>
+        <button type="button" class="btn ghost px" id="copy-backup">Kopieren</button>
+        <button type="button" class="btn ghost px" id="import-backup">Einfügen &amp; laden</button>
       </div>
     </div>
   </details>
@@ -265,379 +257,1129 @@ textarea { width: 100%; min-height: 90px; border-radius: 10px; border: 1px solid
 (function () {
   "use strict";
 
-  /* ---------- Welten & Freischaltungen ---------- */
-  // x/y: Position in der 400x250-Szene (y = Fußpunkt), s: Größe, a: Animation
-  var WORLDS = {
-    forest: {
-      label: "Kanadischer Wald",
-      plantWord: "Baum",
-      unlocks: [
-        { at: 2,   em: "🐿️", name: "Eichhörnchen",   x: 58,  y: 236, s: 14, a: "bob" },
-        { at: 5,   em: "🐇", name: "Schneehase",      x: 112, y: 240, s: 15, a: "bob" },
-        { at: 8,   em: "🦫", name: "Biber",           x: 236, y: 192, s: 16, a: "bob" },
-        { at: 12,  em: "🦉", name: "Bartkauz",        x: 22,  y: 176, s: 14, a: "bob" },
-        { at: 17,  em: "🦊", name: "Rotfuchs",        x: 168, y: 238, s: 19, a: "bob" },
-        { at: 23,  em: "🦆", name: "Eistaucher",      x: 318, y: 184, s: 13, a: "float" },
-        { at: 30,  em: "🦅", name: "Weißkopfseeadler", x: 120, y: 58, s: 18, a: "glide" },
-        { at: 38,  em: "🦌", name: "Weißwedelhirsch", x: 205, y: 214, s: 22, a: "bob" },
-        { at: 48,  em: "🐺", name: "Grauwolf",        x: 350, y: 232, s: 24, a: "bob" },
-        { at: 60,  em: "🦌", name: "Wapiti (Elk)",    x: 140, y: 208, s: 30, a: "bob" },
-        { at: 75,  em: "🐻", tint: "brightness(.38) saturate(.6)", name: "Schwarzbär", x: 278, y: 242, s: 30, a: "bob" },
-        { at: 90,  em: "🫎", name: "Elch (Moose)",    x: 62,  y: 212, s: 36, a: "bob" },
-        { at: 110, em: "🐻", name: "Grizzly",         x: 372, y: 206, s: 34, a: "bob" },
-        { at: 135, em: "✨", name: "Nordlichter",     special: "aurora" }
-      ]
-    },
-    ocean: {
-      label: "Unterwasser",
-      plantWord: "Seetang",
-      unlocks: [
-        { at: 2,   em: "🐟", name: "Fischschwarm",    x: 80,  y: 80,  s: 11, a: "swim", school: true },
-        { at: 5,   em: "🦀", name: "Krabbe",          x: 56,  y: 242, s: 15, a: "bob" },
-        { at: 8,   em: "🦐", name: "Garnele",         x: 302, y: 236, s: 13, a: "bob" },
-        { at: 12,  em: "🐡", name: "Kugelfisch",      x: 336, y: 140, s: 17, a: "float" },
-        { at: 17,  em: "🐠", name: "Tropenfisch",     x: 150, y: 160, s: 17, a: "swim" },
-        { at: 23,  em: "🐙", name: "Oktopus",         x: 232, y: 240, s: 22, a: "bob" },
-        { at: 30,  em: "🪼", name: "Qualle",          x: 350, y: 72,  s: 22, a: "float" },
-        { at: 38,  em: "🐢", name: "Meeresschildkröte", x: 120, y: 120, s: 26, a: "swim" },
-        { at: 48,  em: "🦭", name: "Seehund",         x: 160, y: 50,  s: 25, a: "swim" },
-        { at: 60,  em: "🐬", name: "Delfin",          x: 252, y: 70,  s: 30, a: "swim" },
-        { at: 75,  em: "🦈", name: "Hai",             x: 176, y: 196, s: 32, a: "swim" },
-        { at: 90,  em: "🐳", name: "Buckelwal",       x: 300, y: 128, s: 44, a: "swim" },
-        { at: 110, em: "🐋", name: "Blauwal",         x: 96,  y: 190, s: 54, a: "swim" },
-        { at: 135, em: "✨", name: "Meeresleuchten",  special: "glow" }
-      ]
+  /* =========================================================
+     Grundlagen
+     ========================================================= */
+  var VW = 240, VH = 150, WW = 480, TILE = 4, COLS = WW / TILE;
+  var REDUCED = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function hash(x, y, s) {
+    var h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 982451653);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+  function rng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  var rgbCache = {};
+  function rgb(h) { var c = rgbCache[h]; if (c) return c; var n = parseInt(h.slice(1), 16); c = [n >> 16 & 255, n >> 8 & 255, n & 255]; rgbCache[h] = c; return c; }
+  function hex(c) { return "#" + c.map(function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }).join(""); }
+  function mix(a, b, t) { var x = rgb(a), y = rgb(b); return hex([x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t]); }
+  function shade(a, f) { return f < 0 ? mix(a, "#000000", -f) : mix(a, "#ffffff", f); }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function makeCanvas(w, h) { var c = document.createElement("canvas"); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; }
+
+  // Pixel-Raster -> Sprite (mit automatischer Kontur)
+  function Grid(w, h) { this.w = w; this.h = h; this.d = new Array(w * h).fill(null); }
+  Grid.prototype.set = function (x, y, c) { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < this.w && y < this.h) this.d[y * this.w + x] = c; };
+  Grid.prototype.get = function (x, y) { return (x >= 0 && y >= 0 && x < this.w && y < this.h) ? this.d[y * this.w + x] : null; };
+  Grid.prototype.rect = function (x, y, w, h, c) { for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) this.set(x + i, y + j, c); };
+
+  function finishSprite(g, outline, ax, ay) {
+    var o = new Grid(g.w, g.h), x, y;
+    for (y = 0; y < g.h; y++) for (x = 0; x < g.w; x++) {
+      var c = g.get(x, y);
+      if (c) o.set(x, y, c);
+      else if (outline && (g.get(x - 1, y) || g.get(x + 1, y) || g.get(x, y - 1) || g.get(x, y + 1))) o.set(x, y, outline);
     }
+    var minX = o.w, minY = o.h, maxX = -1, maxY = -1;
+    for (y = 0; y < o.h; y++) for (x = 0; x < o.w; x++) if (o.get(x, y)) { if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; }
+    if (maxX < 0) { minX = minY = 0; maxX = maxY = 0; }
+    var w = maxX - minX + 1, h = maxY - minY + 1, cv = makeCanvas(w, h), cx = cv.getContext("2d"), img = cx.createImageData(w, h);
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+      var col = o.get(x + minX, y + minY);
+      if (col) { var p = rgb(col), i = (y * w + x) * 4; img.data[i] = p[0]; img.data[i + 1] = p[1]; img.data[i + 2] = p[2]; img.data[i + 3] = 255; }
+    }
+    cx.putImageData(img, 0, 0);
+    var fl = makeCanvas(w, h), fx = fl.getContext("2d"); fx.translate(w, 0); fx.scale(-1, 1); fx.drawImage(cv, 0, 0);
+    return { cv: cv, cvL: fl, w: w, h: h, ax: ax - minX, ay: ay - minY };
+  }
+
+  function fromRows(rows, pal, outline) {
+    var w = 0; rows.forEach(function (r) { w = Math.max(w, r.length); });
+    var g = new Grid(w + 2, rows.length + 2);
+    rows.forEach(function (r, y) { for (var x = 0; x < r.length; x++) { var ch = r[x]; if (ch !== "." && pal[ch]) g.set(x + 1, y + 1, pal[ch]); } });
+    return finishSprite(g, outline, (w + 2) / 2, rows.length + 1);
+  }
+  function scaled(sp, f) {
+    var w = Math.max(2, Math.round(sp.w * f)), h = Math.max(2, Math.round(sp.h * f));
+    var src = sp.cv.getContext("2d").getImageData(0, 0, sp.w, sp.h).data;
+    var cv = makeCanvas(w, h), cx = cv.getContext("2d"), img = cx.createImageData(w, h);
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) {
+      var sx = Math.min(sp.w - 1, Math.floor(x / f)), sy = Math.min(sp.h - 1, Math.floor(y / f)), si = (sy * sp.w + sx) * 4, di = (y * w + x) * 4;
+      img.data[di] = src[si]; img.data[di + 1] = src[si + 1]; img.data[di + 2] = src[si + 2]; img.data[di + 3] = src[si + 3];
+    }
+    cx.putImageData(img, 0, 0);
+    var fl = makeCanvas(w, h), fx = fl.getContext("2d"); fx.translate(w, 0); fx.scale(-1, 1); fx.drawImage(cv, 0, 0);
+    return { cv: cv, cvL: fl, w: w, h: h, ax: sp.ax * f, ay: h - 1 };
+  }
+
+  /* =========================================================
+     Tiere
+     ========================================================= */
+  var SPECIES = [
+    { id: "squirrel", at: 2, name: "Eichhörnchen", baby: "Eichhörnchen-Junges", speed: 16, hop: true,
+      c: { main: "#b5562b", light: "#d77d48", dark: "#7f3a1a", belly: "#f0dcc0" },
+      q: { bl: 5, bh: 3, leg: 1, lw: 1, hw: 3, hh: 3, sw: 1, sh: 1, hy: 0, ear: "point", earH: 1, tail: "squirrel", tl: 4 } },
+    { id: "hare", at: 5, name: "Schneeschuhhase", baby: "Häschen", speed: 18, hop: true,
+      c: { main: "#8b6f52", light: "#a98d6e", dark: "#614b37", belly: "#e8e0d0" },
+      winter: { main: "#eef2f6", light: "#ffffff", dark: "#b8c4d4", belly: "#ffffff" },
+      q: { bl: 6, bh: 4, leg: 2, lw: 1, hw: 3, hh: 3, sw: 1, sh: 2, hy: 0, ear: "long", earH: 4, tail: "stub" } },
+    { id: "beaver", at: 8, name: "Biber", baby: "Biberjunges", speed: 8, habitat: "lake",
+      c: { main: "#6e4527", light: "#8a5a35", dark: "#4a2d17", snout: "#4a2d17" },
+      q: { bl: 8, bh: 4, leg: 1, lw: 1, hw: 3, hh: 3, sw: 1, sh: 2, hy: 3, ear: "round", tail: "flat", tl: 4, teeth: true } },
+    { id: "fox", at: 12, name: "Rotfuchs", baby: "Fuchswelpe", speed: 22,
+      c: { main: "#d9692b", light: "#f08c48", dark: "#a2461a", belly: "#f6eadb", leg: "#2e1d14" },
+      q: { bl: 8, bh: 3, leg: 3, lw: 1, hw: 3, hh: 3, sw: 2, sh: 1, hy: 1, ear: "point", earH: 2, tail: "bushy", tl: 6 } },
+    { id: "loon", at: 17, name: "Eistaucher", baby: "Küken", kind: "loon", speed: 5, migrates: true },
+    { id: "eagle", at: 23, name: "Weißkopfseeadler", baby: "Adlerküken", kind: "eagle", speed: 18 },
+    { id: "deer", at: 30, name: "Weißwedelhirsch", baby: "Kitz", speed: 18,
+      c: { main: "#a8794b", light: "#c39465", dark: "#74522f", belly: "#efe4d2", leg: "#8a6440", hoof: "#2a1a10" },
+      q: { bl: 9, bh: 4, leg: 6, lw: 1, hw: 3, hh: 3, sw: 2, sh: 1, neckX: 2, neckY: 3, nw: 2, ear: "point", earH: 2, tail: "short", antler: "deer", spots: true } },
+    { id: "wolf", at: 38, name: "Grauwolf", baby: "Wolfswelpe", speed: 20,
+      c: { main: "#7d7f86", light: "#a6a8b0", dark: "#4f5157", belly: "#d6d6d2" },
+      q: { bl: 10, bh: 4, leg: 4, lw: 1, hw: 4, hh: 3, sw: 2, sh: 2, hy: 1, ear: "point", earH: 2, tail: "wolf", tl: 5 } },
+    { id: "elk", at: 48, name: "Wapiti (Elk)", baby: "Wapitikalb", speed: 14,
+      c: { main: "#b48555", light: "#c99c6b", dark: "#5a3b22", neck: "#5e3d23", leg: "#4a3020", rump: "#ead8b2", hoof: "#1e140c" },
+      q: { bl: 11, bh: 5, leg: 7, lw: 2, hw: 4, hh: 3, sw: 2, sh: 2, neckX: 2, neckY: 4, nw: 3, ear: "point", earH: 2, tail: "none", antler: "elk", spots: true } },
+    { id: "blackbear", at: 60, name: "Schwarzbär", baby: "Bärenjunges", speed: 10, hibernate: true,
+      c: { main: "#26232b", light: "#3b3742", dark: "#16141a", snout: "#a88a64" },
+      q: { bl: 12, bh: 6, leg: 4, lw: 2, hw: 4, hh: 4, sw: 2, sh: 2, hy: 2, ear: "round", tail: "stub", hump: 1 } },
+    { id: "moose", at: 75, name: "Elch (Moose)", baby: "Elchkalb", speed: 10,
+      c: { main: "#4a3222", light: "#634433", dark: "#2c1d13", leg: "#9a8f80", snout: "#3a271a", hoof: "#2a2420" },
+      q: { bl: 13, bh: 6, leg: 9, lw: 2, hw: 5, hh: 4, sw: 3, sh: 3, neckX: 2, neckY: 3, nw: 3, ear: "point", earH: 2, tail: "stub", antler: "moose", hump: 2, bell: true } },
+    { id: "grizzly", at: 90, name: "Grizzly", baby: "Grizzlyjunges", speed: 9, hibernate: true,
+      c: { main: "#8a5a32", light: "#b27c4a", dark: "#5c3a1d", snout: "#c49b69" },
+      q: { bl: 14, bh: 7, leg: 4, lw: 2, hw: 5, hh: 4, sw: 2, sh: 2, hy: 2, ear: "round", tail: "stub", hump: 3 } }
+  ];
+  var AURORA_AT = 110;
+  var BYID = {}; SPECIES.forEach(function (s) { BYID[s.id] = s; });
+
+  var ANTLERS = {
+    deer: [[0,0],[0,-1],[-1,-2],[-1,-3],[0,-4],[1,-4],[2,-4],[3,-3],[0,-5],[2,-5]],
+    elk: [[0,0],[0,-1],[-1,-2],[-1,-3],[-2,-4],[-2,-5],[-3,-6],[-3,-7],[-4,-8],[-4,-9],[-5,-10],[1,-1],[2,-1],[0,-3],[1,-4],[-1,-6],[0,-7],[-2,-8],[-1,-9]],
+    moose: [[0,0],[0,-1],[-3,-2],[-2,-2],[-1,-2],[0,-2],[1,-2],[2,-2],[-5,-3],[-4,-3],[-3,-3],[-2,-3],[-1,-3],[0,-3],[1,-3],[2,-3],[3,-3],[-5,-4],[-4,-4],[-3,-4],[-2,-4],[-1,-4],[0,-4],[1,-4],[-5,-5],[-3,-5],[-1,-5],[1,-5],[3,-4]]
   };
 
-  /* ---------- Speicher ---------- */
+  // Vierbeiner-Generator: baut aus Körper-Parametern ein Pixel-Sprite. stage 0 = Baby, 1 = jung, 2 = ausgewachsen
+  function quadSprite(sp, stage, frame, season) {
+    var c = (season === "winter" && sp.winter) ? sp.winter : sp.c, q = sp.q;
+    var k = [0.55, 0.78, 1][stage], kh = k + (1 - k) * 0.45, kl = k + (1 - k) * 0.5;
+    function S(v, m, f) { return Math.max(m, Math.round(v * (f || k))); }
+    var BL = S(q.bl, 3), BH = S(q.bh, 2), L = S(q.leg, 1, kl), LW = stage === 2 ? q.lw : 1;
+    var HW = S(q.hw, 2, kh), HH = S(q.hh, 2, kh), SW = q.sw ? S(q.sw, 1, kh) : 0, SH = q.sh ? Math.min(HH, S(q.sh, 1, kh)) : 0;
+    var NX = q.neckX ? S(q.neckX, 1) : 0, NY = q.neckY ? S(q.neckY, 1) : 0, NW = q.nw ? S(q.nw, 1) : 0;
+    var g = new Grid(64, 64), G = 54, X0 = 22, bBot = G - L, bTop = bBot - BH + 1;
+    var legC = c.leg || c.dark, farC = shade(legC, -0.3), white = "#f4efe6", i, j;
+
+    // Schwanz
+    var TL = q.tl ? S(q.tl, 2) : 0;
+    if (q.tail === "squirrel") {
+      var tw = stage === 2 ? 3 : 2;
+      for (j = bTop - TL; j <= bBot; j++) { g.rect(X0 - tw, j, tw, 1, c.main); g.set(X0 - tw, j, c.light); }
+      g.rect(X0 - tw + 1, bTop - TL - 1, tw, 1, c.light); g.set(X0, bTop - TL, c.main);
+    } else if (q.tail === "bushy" || q.tail === "wolf") {
+      for (i = 0; i < TL; i++) {
+        var drop = q.tail === "wolf" ? (i > TL * 0.4 ? 1 : 0) + (i > TL * 0.8 ? 1 : 0) : (i > TL * 0.5 ? 1 : 0);
+        var tipC = q.tail === "bushy" ? white : c.dark;
+        var col = i >= TL - 2 ? tipC : (i === 0 ? c.main : c.main);
+        g.rect(X0 - 1 - i, bTop + drop, 1, 2, col);
+        if (i > 0 && i < TL - 1) g.set(X0 - 1 - i, bTop + drop, i % 2 ? c.light : c.main);
+      }
+    } else if (q.tail === "short") { g.set(X0 - 1, bTop, white); g.set(X0 - 1, bTop + 1, c.main); }
+    else if (q.tail === "stub") { g.set(X0 - 1, bTop + 1, c.main); }
+    else if (q.tail === "flat") { g.rect(X0 - TL, bBot - 1, TL, 2, "#3b2a20"); g.set(X0 - TL, bBot - 1, null); g.set(X0 - 2, bBot, "#2c1f17"); }
+
+    // Beine (hinten, vorne; jeweils fernes und nahes Bein)
+    function leg(x, phase, near) {
+      var colL = near ? legC : farC;
+      for (var r = 0; r < L; r++) {
+        var y = bBot + 1 + r, off = 0;
+        if (frame && r >= Math.floor(L / 2)) off = (near ? 1 : -1) * phase;
+        g.rect(x + off, y, LW, 1, (c.hoof && r === L - 1) ? c.hoof : colL);
+      }
+    }
+    var backX = X0 + 1, frontX = X0 + BL - 1 - LW;
+    var two = BL >= 2 * (LW + 1) + 2;
+    if (two) { leg(backX + 1, -1, false); leg(frontX + 1, 1, false); }
+    leg(backX, 1, true); leg(frontX, -1, true);
+
+    // Körper
+    g.rect(X0, bTop, BL, BH, c.main);
+    for (i = 0; i < BL; i++) g.set(X0 + i, bTop, c.light);
+    if (BH >= 3) for (i = 1; i < BL - 1; i++) g.set(X0 + i, bBot, c.belly || c.dark);
+    if (c.rump) { g.rect(X0, bTop, 2, Math.min(3, BH), c.rump); }
+    if (BL >= 4 && BH >= 3) { g.set(X0, bTop, null); g.set(X0 + BL - 1, bTop, null); g.set(X0, bBot, null); }
+    var hump = q.hump ? S(q.hump, 0) : 0;
+    for (i = 0; i < hump; i++) {
+      var hx0 = X0 + Math.round(BL * 0.45) + i, hx1 = X0 + Math.round(BL * 0.85) - i;
+      for (var hx = hx0; hx <= hx1; hx++) g.set(hx, bTop - 1 - i, i === hump - 1 ? c.light : c.main);
+      if (i === 0) for (hx = hx0; hx <= hx1; hx++) g.set(hx, bTop, c.main);
+    }
+    if (q.spots && stage === 0) for (i = 0; i < Math.floor(BL / 2) - 1; i++) g.set(X0 + 2 + i * 2, bTop + 1 + (i % 2), white);
+
+    // Hals und Kopf
+    var headLeft, headBottom;
+    if (NY > 0) {
+      for (j = 0; j <= NY; j++) g.rect(X0 + BL - NW - 1 + Math.round(j * NX / NY), bTop - j, NW, 1, c.neck || c.main);
+      headLeft = X0 + BL - NW - 1 + NX; headBottom = bTop - NY;
+    } else {
+      headLeft = X0 + BL - 2; headBottom = bTop + Math.min(BH - 1, S(q.hy || 0, 0, kh) + HH - 1);
+    }
+    var headTop = headBottom - HH + 1;
+    g.rect(headLeft, headTop, HW, HH, c.main);
+    for (i = 0; i < HW; i++) g.set(headLeft + i, headTop, c.light);
+    if (HW >= 3) g.set(headLeft, headTop, null);
+    if (HW >= 3 && HH >= 3) g.set(headLeft + HW - 1, headTop, null);
+    if (SW) { g.rect(headLeft + HW, headBottom - SH + 1, SW, SH, c.snout || c.main); g.set(headLeft + HW + SW - 1, headBottom - SH + 1, "#1a1210"); }
+    if (q.teeth) g.set(headLeft + HW + SW - 1, headBottom + 1, "#f0e2a8");
+    if (q.bell && stage === 2) g.rect(headLeft + 1, headBottom + 1, 1, 2, c.dark);
+    g.set(HW >= 3 ? headLeft + HW - 2 : headLeft + HW - 1, headTop + 1, "#0d0907");
+
+    // Ohren
+    var earH = q.earH ? S(q.earH, 1, kh) : 0;
+    if (q.ear === "point") {
+      for (i = 0; i < earH; i++) g.set(headLeft + 1, headTop - 1 - i, i === earH - 1 ? c.dark : c.main);
+      if (earH >= 2 && HW >= 3) g.set(headLeft + 2, headTop - 1, c.main);
+    } else if (q.ear === "long") {
+      for (i = 0; i < earH; i++) g.set(headLeft + (i >= 2 ? 0 : 1), headTop - 1 - i, i === earH - 1 ? c.dark : c.main);
+      for (i = 0; i < earH - 1; i++) g.set(headLeft + (i >= 2 ? 1 : 2), headTop - 1 - i, shade(c.main, -0.15));
+    } else if (q.ear === "round") {
+      g.set(headLeft + 1, headTop - 1, c.main); if (HW >= 4) g.set(headLeft + 2, headTop - 1, c.dark);
+    }
+
+    // Geweih nur bei ausgewachsenen Tieren
+    if (q.antler && stage === 2) {
+      var ac = q.antler === "moose" ? "#cdb88d" : "#e7dcbd";
+      ANTLERS[q.antler].forEach(function (p) { g.set(headLeft + 2 + p[0], headTop - 1 + p[1], ac); });
+    }
+    var outline = shade(c.dark, -0.55);
+    var spr = finishSprite(g, outline, X0 + BL / 2, G);
+    spr.legs = L;
+    return spr;
+  }
+
+  var LOON_PAL = { k: "#121619", g: "#1d3b33", w: "#f2f4f5", r: "#c0262d", b: "#2b2f33" };
+  var LOON = fromRows([
+    "........kkk...",
+    ".......kgkrkbb",
+    "........kkk...",
+    "........wkw...",
+    "kkwkwkwkkkk...",
+    ".kkwkwkwkkk...",
+    "..kkkkkkkk...."
+  ], LOON_PAL, "#06080a");
+  var LOON_CHICK = fromRows([".cc.", "ccek", "ccc."], { c: "#6b625a", e: "#111111", k: "#2b2f33" }, "#241f1b");
+  var EAGLE_PAL = { d: "#2b1a0e", m: "#4f321c", l: "#6b4628", w: "#f6f5ef", y: "#f2c230" };
+  var EAGLE = [
+    fromRows([
+      "...............www..",
+      "wwddddddddddmmmwwwwy",
+      "wwwwmmmmmmmmmmmmwwyy",
+      ".ww..lllllllmmm....."
+    ], EAGLE_PAL, "#140b05"),
+    fromRows([
+      "..d.................",
+      "..dd.d..............",
+      "...ddddd............",
+      "....ddddddd.........",
+      ".....dddddddl..www..",
+      "www...mmdddmmmwwwwy.",
+      "wwwwmmmmmmmmmmmmwwyy",
+      ".ww...mmmmmmmmm....."
+    ], EAGLE_PAL, "#140b05"),
+    fromRows([
+      "...............www..",
+      "www...mmmmmmmmmwwwwy",
+      "wwwwmmmmmlllmmmmwwyy",
+      ".ww....ddddddd......",
+      ".......dddddd.......",
+      "......ddddd.........",
+      ".....ddd.d..........",
+      "....d..............."
+    ], EAGLE_PAL, "#140b05")
+  ];
+  var NEST = fromRows(["..wc..cw..", ".wwwwwwww.", "nnmnnmnnmn", ".nnnnnnnn."], { n: "#6b4a2b", m: "#8a6a40", w: "#e9e4da", c: "#f2c230" }, "#2a1a0e");
+
+  var spriteCache = {};
+  function animalSprite(spId, stage, frame, season) {
+    var sp = BYID[spId], wkey = (season === "winter" && sp.winter) ? "w" : "";
+    var key = spId + stage + frame + wkey;
+    if (spriteCache[key]) return spriteCache[key];
+    var s;
+    if (sp.kind === "loon") s = stage === 0 ? LOON_CHICK : stage === 1 ? scaled(LOON, 0.75) : LOON;
+    else if (sp.kind === "eagle") s = stage === 2 ? EAGLE[frame] : scaled(EAGLE[frame], stage === 1 ? 0.72 : 0.5);
+    else s = quadSprite(sp, stage, frame, season);
+    spriteCache[key] = s;
+    return s;
+  }
+
+  /* =========================================================
+     Bäume (eine pro Gewohnheit)
+     ========================================================= */
+  function treeHeight(s) { return Math.min(86, Math.round(9 + 12.5 * Math.log2(1 + s))); }
+  function treeStageName(s, had) {
+    if (s === 0) return had ? "Vertrocknet" : "Setzling";
+    if (s < 3) return "Spross"; if (s < 7) return "Junger Baum"; if (s < 14) return "Baum"; if (s < 30) return "Großer Baum"; return "Uralter Baum";
+  }
+  var LEAVES = {
+    summer: [["#3f8a3a", "#62ad4a", "#2a6530"]],
+    spring: [["#5ea844", "#86c95a", "#3f8536"]],
+    autumnMaple: [["#c2362b", "#e0573a", "#8a2219"], ["#d9772b", "#f09a3e", "#a35220"], ["#c2362b", "#e66a3b", "#8a2219"]],
+    autumnBirch: [["#d9b02b", "#f0cf4a", "#a6821f"], ["#e0a32b", "#f5c34e", "#a8761e"]]
+  };
+
+  function addRoots(g, cx, base, h, seed) {
+    var r = rng(seed * 7 + 3), n = 2 + Math.floor(h / 22), depth = Math.round(h * 0.22) + 2;
+    for (var k = 0; k < n; k++) {
+      var x = cx + (k % 2 ? 1 : -1) * (k > 1 ? 1 : 0), dir = k % 2 ? 1 : -1, len = Math.round(depth * (0.5 + r() * 0.5));
+      for (var d = 0; d < len; d++) { g.set(x, base + 1 + d, "#4b301c"); if (r() < 0.55) x += dir; if (r() < 0.2) g.set(x - dir, base + 1 + d, "#4b301c"); }
+    }
+  }
+
+  function pineGrid(h, seed, season) {
+    var W = Math.ceil(h * 0.7) + 6, cx = Math.floor(W / 2), depth = Math.round(h * 0.22) + 3;
+    var g = new Grid(W, h + depth + 2), base = h, tw = h < 14 ? 1 : h < 36 ? 2 : 3, th = Math.max(2, Math.round(h * 0.13));
+    var trunk = "#5b3a24", trunkL = "#7a5032";
+    g.rect(cx - Math.floor(tw / 2), Math.round(h * 0.3), tw, base - Math.round(h * 0.3) + 1, trunk);
+    if (tw > 1) g.rect(cx - Math.floor(tw / 2), Math.round(h * 0.3), 1, base - Math.round(h * 0.3) + 1, trunkL);
+    var fh = h - th, n = clamp(Math.round(h / 11), 2, 7);
+    var pal = season === "winter" ? ["#2c5e44", "#3f7a55", "#1d4532"] : ["#2f6b3a", "#4a8a45", "#1e4a2c"];
+    for (var t = 0; t < n; t++) {
+      var yT = Math.floor(t * fh / (n + 1)) + 1, yB = Math.floor((t + 2) * fh / (n + 1));
+      var maxH = Math.max(1, Math.round(h * 0.3 * (t + 2) / (n + 1)));
+      for (var y = yT; y <= yB; y++) {
+        var f = (y - yT + 1) / (yB - yT + 1), half = Math.round(maxH * f);
+        if (y < yB && hash(y, t, seed) < 0.3) half = Math.max(0, half - 1);
+        for (var x = cx - half; x <= cx + half; x++) {
+          var col = pal[0];
+          if (x <= cx - Math.ceil(half * 0.45)) col = pal[1];
+          else if (x >= cx + Math.ceil(half * 0.4)) col = pal[2];
+          if (y === yB) col = pal[2];
+          g.set(x, y, col);
+        }
+      }
+    }
+    g.set(cx, 0, pal[1]);
+    if (season === "winter") {
+      for (var yy = 1; yy < base; yy++) for (var xx = 0; xx < W; xx++) {
+        var cc = g.get(xx, yy);
+        if (cc && cc !== trunk && cc !== trunkL && !g.get(xx, yy - 1)) { g.set(xx, yy, "#f2f6fb"); }
+      }
+    }
+    addRoots(g, cx, base, h, seed);
+    return { g: g, ax: cx, ay: base };
+  }
+
+  function broadleafGrid(h, seed, season, birch) {
+    var W = Math.ceil(h * 0.8) + 8, cx = Math.floor(W / 2), depth = Math.round(h * 0.22) + 3;
+    var g = new Grid(W, h + depth + 2), base = h, r = rng(seed * 13 + 1);
+    var tw = h < 16 ? 1 : h < 40 ? 2 : 3;
+    var trunk = birch ? "#e8e4dc" : "#5b3a24", trunkD = birch ? "#2a2522" : "#432a19";
+    var topY = Math.round(h * 0.35);
+    g.rect(cx - Math.floor(tw / 2), topY, tw, base - topY + 1, trunk);
+    for (var y = topY; y <= base; y++) if (birch ? hash(cx, y, seed) < 0.22 : (tw > 1 && y % 3 === 0)) g.set(cx - Math.floor(tw / 2) + (birch ? Math.floor(hash(y, cx, seed) * tw) : tw - 1), y, trunkD);
+    // Äste
+    var nb = h < 16 ? 1 : 2 + Math.floor(h / 30), branchC = birch ? "#cfc9bd" : "#5b3a24", tips = [];
+    for (var b = 0; b < nb; b++) {
+      var sy = Math.round(topY + (base - topY) * (0.05 + 0.3 * r())), dir = b % 2 ? 1 : -1, bx = cx, by = sy, len = Math.round(h * (0.18 + 0.12 * r()));
+      for (var s = 0; s < len; s++) { bx += dir * (r() < 0.6 ? 1 : 0); by -= r() < 0.7 ? 1 : 0; g.set(bx, by, branchC); }
+      tips.push([bx, by]);
+    }
+    tips.push([cx, topY - 2]);
+    if (season === "winter") {
+      for (var t = 0; t < tips.length; t++) { g.set(tips[t][0], tips[t][1] - 1, branchC); g.set(tips[t][0] + 1, tips[t][1] - 2, branchC); g.set(tips[t][0], tips[t][1] - 2, "#f2f6fb"); }
+      for (var yy = 1; yy < base; yy++) for (var xx = 0; xx < W; xx++) if (g.get(xx, yy) && !g.get(xx, yy - 1) && hash(xx, yy, seed) < 0.5 && yy < topY + 6) g.set(xx, yy - 1, "#f2f6fb");
+    } else {
+      var pals = season === "autumn" ? (birch ? LEAVES.autumnBirch : LEAVES.autumnMaple) : (season === "spring" ? LEAVES.spring : LEAVES.summer);
+      var cyC = Math.round(h * (birch ? 0.32 : 0.3)), rad = h * (birch ? 0.2 : 0.26), blobs = [];
+      var nBlobs = 3 + Math.floor(h / 20);
+      for (var k = 0; k < nBlobs; k++) blobs.push({ x: cx + (r() - 0.5) * rad * (birch ? 1.0 : 1.5), y: cyC + (r() - 0.5) * rad * 1.1, r: rad * (0.55 + r() * 0.4), p: pals[Math.floor(r() * pals.length)] });
+      blobs.push({ x: cx, y: cyC, r: rad * 0.8, p: pals[0] });
+      for (var py = 0; py < base; py++) for (var px = 0; px < W; px++) {
+        var hit = null;
+        for (var bi = 0; bi < blobs.length; bi++) { var bb = blobs[bi], dx = px - bb.x, dy = (py - bb.y) * (birch ? 0.8 : 1.05); if (dx * dx + dy * dy <= bb.r * bb.r * (0.85 + hash(px, py, seed) * 0.3)) { hit = bb; break; } }
+        if (!hit) continue;
+        var rel = (px - cx) / (rad * 2) + (py - cyC) / (rad * 2), col = hit.p[0];
+        if (rel < -0.18) col = hit.p[1]; else if (rel > 0.22) col = hit.p[2];
+        var hv = hash(px, py, seed + 5);
+        if (hv < 0.08) col = hit.p[2]; else if (hv > 0.93) col = hit.p[1];
+        g.set(px, py, col);
+      }
+    }
+    addRoots(g, cx, base, h, seed);
+    return { g: g, ax: cx, ay: base };
+  }
+
+  function smallPlantGrid(dead) {
+    var g = new Grid(9, 14), c = dead ? "#8a6a45" : "#5ea844";
+    if (dead) { g.rect(4, 3, 1, 7, "#6b4a2b"); g.set(3, 4, "#6b4a2b"); g.set(2, 3, "#6b4a2b"); g.set(5, 5, "#6b4a2b"); g.set(6, 4, "#6b4a2b"); g.set(4, 2, "#6b4a2b"); }
+    else { g.rect(4, 6, 1, 4, "#4a8a3a"); g.set(3, 6, c); g.set(2, 5, c); g.set(5, 7, c); g.set(6, 6, c); g.set(4, 5, "#86c95a"); }
+    g.set(4, 10, "#4b301c"); g.set(3, 11, "#4b301c");
+    return { g: g, ax: 4, ay: 9 };
+  }
+
+  var treeCache = {};
+  function treeSprite(type, s, had, season, seed) {
+    var h = treeHeight(s), key = type + "|" + (s === 0 ? (had ? "dead" : "sprout") : h) + "|" + season + "|" + seed;
+    if (treeCache[key]) return treeCache[key];
+    var r = s === 0 ? smallPlantGrid(had) : type === "pine" ? pineGrid(h, seed, season) : broadleafGrid(h, seed, season, type === "birch");
+    var spr = finishSprite(r.g, null, r.ax, r.ay);
+    spr.h0 = s === 0 ? 8 : h;
+    treeCache[key] = spr;
+    return spr;
+  }
+  var TREE_TYPES = ["pine", "maple", "pine", "birch"];
+
+  /* =========================================================
+     Gelände (Terraria-artige Blöcke)
+     ========================================================= */
+  var surf = [], POOL0 = 78, POOL1 = 94, RIM, WATER_Y, DEN0 = 14, DEN1 = 27, DEN_ROW;
+  (function () {
+    for (var c = 0; c < COLS; c++) surf[c] = 25 + Math.round(1.7 * Math.sin(c * 0.09 + 0.5) + 1.2 * Math.sin(c * 0.23 + 2.1) + 0.6 * Math.sin(c * 0.51));
+    RIM = 25;
+    for (c = POOL0 - 3; c <= POOL1 + 3; c++) surf[c] = RIM;
+    for (c = POOL0; c <= POOL1; c++) surf[c] = RIM + 1 + Math.round(2 * Math.sin(Math.PI * (c - POOL0 + 0.5) / (POOL1 - POOL0 + 1)));
+    for (c = 1; c < COLS; c++) { if (c >= POOL0 - 3 && c <= POOL1 + 4) continue; if (surf[c] - surf[c - 1] > 1) surf[c] = surf[c - 1] + 1; if (surf[c] - surf[c - 1] < -1) surf[c] = surf[c - 1] - 1; }
+    WATER_Y = RIM * TILE + 2;
+    DEN_ROW = 0; for (c = DEN0; c <= DEN1; c++) DEN_ROW = Math.max(DEN_ROW, surf[c]); DEN_ROW += 3;
+  })();
+  function colAt(x) { return clamp(Math.floor(x / TILE), 0, COLS - 1); }
+  function surfY(x) { return surf[colAt(x)] * TILE; }
+  function inPool(x) { var c = colAt(x); return c >= POOL0 && c <= POOL1; }
+  var POOL_X0 = POOL0 * TILE, POOL_X1 = (POOL1 + 1) * TILE;
+  var DEN_X0 = DEN0 * TILE, DEN_X1 = (DEN1 + 1) * TILE, DEN_FLOOR = (DEN_ROW + 4) * TILE;
+  function isCave(c, r) {
+    if (c < DEN0 || c > DEN1) return false;
+    var edge = c === DEN0 || c === DEN1;
+    return r >= DEN_ROW + (edge ? 1 : 0) && r <= DEN_ROW + 3;
+  }
+
+  var GROUND = {
+    summer: { g0: "#7cc94f", g1: "#5aa83c", g2: "#3f8a2e", blade: ["#5aa83c", "#7cc94f"], flowers: ["#f5d33b", "#ffffff", "#c86ad1"] },
+    spring: { g0: "#8fd65a", g1: "#64b444", g2: "#46913a", blade: ["#64b444", "#8fd65a"], flowers: ["#f5d33b", "#ffffff", "#ff9ec0"] },
+    autumn: { g0: "#a8b04a", g1: "#8a9a3c", g2: "#6b7a2e", blade: ["#8a9a3c", "#b3a447"], flowers: ["#d9772b", "#c2362b", "#e0b02b"] },
+    winter: { g0: "#f4f8fd", g1: "#dde8f4", g2: "#b9cbe0", blade: ["#eef4fb"], flowers: [] }
+  };
+
+  function buildTerrain(season) {
+    var cv = makeCanvas(WW, VH), cx = cv.getContext("2d"), img = cx.createImageData(WW, VH), d = img.data, G = GROUND[season];
+    function put(x, y, col, a) { if (x < 0 || y < 0 || x >= WW || y >= VH) return; var p = rgb(col), i = (y * WW + x) * 4; d[i] = p[0]; d[i + 1] = p[1]; d[i + 2] = p[2]; d[i + 3] = a == null ? 255 : a; }
+    var ROWS = Math.ceil(VH / TILE);
+    for (var c = 0; c < COLS; c++) {
+      var top = surf[c], pool = c >= POOL0 && c <= POOL1;
+      for (var r = top; r < ROWS; r++) {
+        var depth = r - top, cave = isCave(c, r);
+        var stoneLine = 5 + Math.floor(hash(c, 3, 9) * 2.5);
+        var type = cave ? "wall" : depth === 0 ? (pool ? "mud" : "grass") : depth < stoneLine ? "dirt" : "stone";
+        for (var py = 0; py < TILE; py++) for (var px = 0; px < TILE; px++) {
+          var X = c * TILE + px, Y = r * TILE + py, hv = hash(X, Y, 1), col;
+          if (type === "grass") {
+            if (py === 0) col = G.g0; else if (py === 1) col = G.g1;
+            else col = hash(X, 7, 2) < (py === 2 ? 0.55 : 0.2) ? G.g2 : (hv < 0.15 ? "#5e3a20" : "#7a4e2d");
+          } else if (type === "mud") col = hv < 0.25 ? "#3d3022" : "#4e3d2b";
+          else if (type === "dirt") col = hv < 0.13 ? "#5e3a20" : hv > 0.9 ? "#946139" : "#7a4e2d";
+          else if (type === "stone") {
+            col = hv < 0.15 ? "#545862" : hv > 0.88 ? "#868b96" : "#6b6f7a";
+            if (hash(Math.floor(X / 6), Math.floor(Y / 6), 4) < 0.07 && hv < 0.55) col = hv < 0.2 ? "#e39a55" : "#c8743a";
+            if (hash(Math.floor(X / 5), Math.floor(Y / 5), 8) < 0.015 && hv < 0.4) col = "#5fe3d0";
+          } else {
+            col = hv < 0.2 ? "#2a1c12" : "#36251a";
+            if (r === DEN_ROW + 3 && py >= 2) col = hv < 0.5 ? "#c9a55a" : "#a8873f";
+          }
+          if (type !== "grass" || py > 1) {
+            if (px === TILE - 1 || py === TILE - 1) col = shade(col, -0.07);
+          }
+          var dark = clamp((Y - top * TILE) / (VH - top * TILE), 0, 1) * 0.5;
+          if (type !== "grass" || py > 1) col = mix(col, "#0b0a12", dark);
+          put(X, Y, col);
+        }
+      }
+      // Gras, Blumen, Laub, Schnee oberhalb
+      if (!pool) for (var px2 = 0; px2 < TILE; px2++) {
+        var X2 = c * TILE + px2, Y0 = top * TILE, hv2 = hash(X2, 99, 3);
+        if (season === "winter") { if (hv2 < 0.55) put(X2, Y0 - 1, "#eef4fb"); continue; }
+        if (hv2 < 0.5) put(X2, Y0 - 1, G.blade[0]);
+        if (hv2 < 0.22) put(X2, Y0 - 2, G.blade[G.blade.length - 1]);
+        if (G.flowers.length && hash(X2, 5, 6) < (season === "autumn" ? 0.1 : 0.05)) put(X2, Y0 - (season === "autumn" ? 1 : 3), G.flowers[Math.floor(hash(X2, 6, 7) * G.flowers.length)]);
+      }
+    }
+    // Höhleneingang oben über dem Bau ist zugewachsen: nur eine dunkle Spalte als Zugang
+    cx.putImageData(img, 0, 0);
+    return cv;
+  }
+
+  /* Parallax-Hintergrund */
+  function buildLayer(f, kind, season) {
+    var w = Math.ceil(VW + (WW - VW) * f) + 2, cv = makeCanvas(w, VH), cx = cv.getContext("2d"), img = cx.createImageData(w, VH), d = img.data;
+    function put(x, y, col) { if (x < 0 || y < 0 || x >= w || y >= VH) return; var p = rgb(col), i = (y * w + x) * 4; d[i] = p[0]; d[i + 1] = p[1]; d[i + 2] = p[2]; d[i + 3] = 255; }
+    for (var x = 0; x < w; x++) {
+      var top, col, snow;
+      if (kind === "far") { top = Math.round(56 + 14 * Math.sin(x * 0.031 + 1) + 8 * Math.sin(x * 0.077 + 2.3) + 3 * Math.sin(x * 0.19)); col = "#9aaed2"; snow = season === "winter" ? 9 : (top < 54 ? 4 + Math.round((54 - top) * 0.6) : 0); }
+      else if (kind === "near") { top = Math.round(70 + 12 * Math.sin(x * 0.045 + 0.3) + 7 * Math.sin(x * 0.11 + 1.7) + 2 * Math.sin(x * 0.3)); col = "#6377a3"; snow = season === "winter" ? 7 : (top < 64 ? 2 + Math.round((64 - top) * 0.5) : 0); }
+      else { top = Math.round(88 + 4 * Math.sin(x * 0.05) + 2 * Math.sin(x * 0.13 + 1)); col = season === "winter" ? "#3a5a58" : "#2f4f45"; snow = 0; }
+      for (var y = top; y < VH; y++) {
+        var c2 = col;
+        if (kind !== "hills") {
+          if (y - top < snow && hash(x, y, 2) > (y - top) / (snow + 1) * 0.7) c2 = kind === "far" ? "#eef3fa" : "#dfe8f3";
+          else if (hash(x, y, 3) < 0.06) c2 = shade(col, -0.08);
+          if (x % 23 < 11 && kind === "near" && y - top > snow) c2 = shade(c2, -0.06);
+        }
+        put(x, y, c2);
+      }
+    }
+    if (kind === "hills") {
+      var r = rng(42);
+      for (var tx = 0; tx < w; tx += 3 + Math.floor(r() * 3)) {
+        var base = Math.round(88 + 4 * Math.sin(tx * 0.05) + 2 * Math.sin(tx * 0.13 + 1)) + 1, th = 7 + Math.floor(r() * 10);
+        var broad = season !== "winter" && r() < 0.28;
+        if (broad) {
+          var bc = season === "autumn" ? ["#b8562b", "#c9862f", "#a8402a", "#d0a23a"][Math.floor(r() * 4)] : "#355e45";
+          var rr = 3 + Math.floor(r() * 2);
+          for (var by = -rr; by <= rr; by++) for (var bx = -rr; bx <= rr; bx++) if (bx * bx + by * by <= rr * rr) put(tx + bx, base - rr - 2 + by, hash(tx + bx, by, 5) < 0.2 ? shade(bc, -0.15) : bc);
+        } else {
+          for (var yy = 0; yy < th; yy++) { var half = Math.floor(yy * 0.38); for (var xx = -half; xx <= half; xx++) put(tx + xx, base - th + yy, season === "winter" && yy < th * 0.5 && xx === -half ? "#dfe8f3" : "#24413a"); }
+        }
+      }
+    }
+    cx.putImageData(img, 0, 0);
+    return { cv: cv, f: f };
+  }
+
+  function buildCloud(seed) {
+    var r = rng(seed), w = 22 + Math.floor(r() * 18), h = 10, g = new Grid(w, h + 2), puffs = [];
+    for (var i = 0; i < 4; i++) puffs.push([4 + r() * (w - 8), 5 + r() * 3, 3 + r() * 3]);
+    for (var y = 0; y < h + 2; y++) for (var x = 0; x < w; x++) {
+      for (var p = 0; p < puffs.length; p++) { var dx = x - puffs[p][0], dy = y - puffs[p][1]; if (dx * dx + dy * dy * 1.6 <= puffs[p][2] * puffs[p][2] && y <= 9) { g.set(x, y, y >= 8 ? "#d7e2ef" : y <= 3 ? "#ffffff" : "#f3f7fb"); break; } }
+    }
+    return finishSprite(g, null, 0, 0);
+  }
+
+  /* =========================================================
+     Zustand & Daten
+     ========================================================= */
   var KEY = "habitat-v1";
   var state;
-
-  function dayKey(d) {
-    var m = d.getMonth() + 1, day = d.getDate();
-    return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day;
-  }
+  function dayKey(d) { var m = d.getMonth() + 1, day = d.getDate(); return d.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day; }
   function addDays(d, n) { var c = new Date(d.getFullYear(), d.getMonth(), d.getDate()); c.setDate(c.getDate() + n); return c; }
   function uid() { return Math.random().toString(36).slice(2, 10); }
-
-  function seed() {
+  function seedData() {
     var today = new Date();
-    function hist(n, skipToday) {
-      var days = {};
-      for (var i = skipToday ? 1 : 0; i < n + (skipToday ? 1 : 0); i++) days[dayKey(addDays(today, -i))] = true;
-      return days;
-    }
-    return {
-      world: "forest",
-      sample: true,
-      habits: [
-        { id: uid(), name: "Laufen gehen", days: hist(9, false) },
-        { id: uid(), name: "20 Min. Englisch", days: hist(6, true) },
-        { id: uid(), name: "Mama anrufen", days: hist(2, false) }
-      ]
-    };
+    function hist(n, skipToday) { var days = {}; for (var i = skipToday ? 1 : 0; i < n + (skipToday ? 1 : 0); i++) days[dayKey(addDays(today, -i))] = true; return days; }
+    return { sample: true, view: { time: "auto", season: "auto" }, habits: [
+      { id: uid(), name: "Laufen gehen", days: hist(9, false) },
+      { id: uid(), name: "20 Min. Englisch", days: hist(6, true) },
+      { id: uid(), name: "Mama anrufen", days: hist(2, false) }
+    ] };
   }
-
   function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (raw) { var s = JSON.parse(raw); if (s && Array.isArray(s.habits)) return s; }
-    } catch (e) {}
-    return seed();
+    try { var raw = localStorage.getItem(KEY); if (raw) { var s = JSON.parse(raw); if (s && Array.isArray(s.habits)) { delete s.world; s.view = s.view || { time: "auto", season: "auto" }; return s; } } } catch (e) {}
+    return seedData();
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
 
-  /* ---------- Streak-Logik ---------- */
-  function streak(h) {
-    var d = new Date();
-    if (!h.days[dayKey(d)]) d = addDays(d, -1); // heute noch offen: Streak zählt bis gestern
-    var n = 0;
-    while (h.days[dayKey(d)]) { n++; d = addDays(d, -1); }
-    return n;
-  }
+  function streak(h) { var d = new Date(); if (!h.days[dayKey(d)]) d = addDays(d, -1); var n = 0; while (h.days[dayKey(d)]) { n++; d = addDays(d, -1); } return n; }
   function best(h) {
-    var keys = Object.keys(h.days).filter(function (k) { return h.days[k]; }).sort();
-    var bestRun = 0, run = 0, prev = null;
-    keys.forEach(function (k) {
-      var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]);
-      run = prev && dayKey(addDays(prev, 1)) === k ? run + 1 : 1;
-      if (run > bestRun) bestRun = run;
-      prev = d;
+    var keys = Object.keys(h.days).filter(function (k) { return h.days[k]; }).sort(), b = 0, run = 0, prev = null;
+    keys.forEach(function (k) { var p = k.split("-"), d = new Date(+p[0], +p[1] - 1, +p[2]); run = prev && dayKey(addDays(prev, 1)) === k ? run + 1 : 1; if (run > b) b = run; prev = d; });
+    return b;
+  }
+  function realPoints() { return state.habits.reduce(function (a, h) { return a + streak(h); }, 0); }
+
+  var previewOn = false, previewPts = 100;
+  function points() { return previewOn ? previewPts : realPoints(); }
+
+  function season() {
+    if (state.view.season !== "auto") return state.view.season;
+    var m = new Date().getMonth();
+    return m === 11 || m <= 1 ? "winter" : m <= 4 ? "spring" : m <= 7 ? "summer" : "autumn";
+  }
+  function hourNow() {
+    if (state.view.time === "day") return 12.5;
+    if (state.view.time === "night") return 23;
+    var d = new Date(); return d.getHours() + d.getMinutes() / 60;
+  }
+  var SEASON_DE = { spring: "Frühling", summer: "Sommer", autumn: "Herbst", winter: "Winter" };
+
+  // Population aus Punkten: Gründer kommt jung an, wird erwachsen, bekommt bis zu 2 Junge
+  function population(pts) {
+    var out = [];
+    SPECIES.forEach(function (sp) {
+      if (pts < sp.at) return;
+      var age = pts - sp.at;
+      out.push({ id: sp.id + "#0", sp: sp.id, stage: age < 4 ? 1 : 2, kid: 0 });
+      [8, 18].forEach(function (born, i) {
+        if (age >= born) { var ka = age - born; out.push({ id: sp.id + "#" + (i + 1), sp: sp.id, stage: ka < 5 ? 0 : ka < 10 ? 1 : 2, kid: i + 1 }); }
+      });
     });
-    return bestRun;
-  }
-  function totalPoints() { return state.habits.reduce(function (a, h) { return a + streak(h); }, 0); }
-
-  /* ---------- Vorschau ---------- */
-  var previewOn = false, previewPts = 60;
-  function shownPoints() { return previewOn ? previewPts : totalPoints(); }
-  function plantStreaks() {
-    if (!previewOn) return state.habits.map(function (h) { return { name: h.name, s: streak(h), had: best(h) > 0 }; });
-    var list = state.habits.length ? state.habits : [{ name: "" }, { name: "" }, { name: "" }];
-    var each = Math.round(previewPts / list.length);
-    return list.map(function (h) { return { name: h.name, s: each, had: true }; });
-  }
-
-  /* ---------- Szene ---------- */
-  var svg = document.getElementById("scene");
-  var lastRenderedUnlocks = null;
-
-  function plantHeight(s) { return s === 0 ? 10 : Math.min(98, 12 + 16 * Math.log2(1 + s)); }
-  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  function rnd(seedNum) { var x = Math.sin(seedNum * 9301 + 49297) * 233280; return x - Math.floor(x); }
-
-  function spruce(x, base, h, fill, dark) {
-    var trunkH = h * 0.14, w = h * 0.5, tiers = 4, out = "";
-    out += '<rect x="' + (x - h * 0.035) + '" y="' + (base - trunkH) + '" width="' + (h * 0.07) + '" height="' + trunkH + '" fill="#5b3a24"/>';
-    for (var i = 0; i < tiers; i++) {
-      var top = base - h + i * (h * 0.2);
-      var bot = base - trunkH * 0.6 - (tiers - 1 - i) * (h * 0.13);
-      var hw = w * (0.32 + 0.68 * (i + 1) / tiers) / 2;
-      out += '<polygon points="' + x + "," + top + " " + (x - hw) + "," + bot + " " + (x + hw) + "," + bot + '" fill="' + (i % 2 ? dark : fill) + '"/>';
-    }
     return out;
   }
+  function familySize(spId, pts) { return population(pts).filter(function (p) { return p.sp === spId; }).length; }
+  function displayName(sp, stage) { return stage === 0 ? sp.baby : stage === 1 ? sp.name + " (jung)" : sp.name; }
 
-  function forestScene(pts, plants, unlocked) {
-    var o = "";
-    o += '<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (pts >= 135 ? "#14213d" : "#a9c9dc") + '"/><stop offset="1" stop-color="' + (pts >= 135 ? "#3d5a80" : "#e8efe4") + '"/></linearGradient>' +
-         '<linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f9fb4"/><stop offset="1" stop-color="#3f6f86"/></linearGradient>' +
-         '<linearGradient id="aur" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#46f2a4" stop-opacity="0"/><stop offset=".4" stop-color="#46f2a4" stop-opacity=".75"/><stop offset=".7" stop-color="#7cc8ff" stop-opacity=".6"/><stop offset="1" stop-color="#b48cff" stop-opacity="0"/></linearGradient></defs>';
-    o += '<rect width="400" height="250" fill="url(#sky)"/>';
-    if (pts >= 135) {
-      for (var st = 0; st < 40; st++) o += '<circle cx="' + (rnd(st) * 400).toFixed(1) + '" cy="' + (rnd(st + 99) * 90).toFixed(1) + '" r="' + (0.4 + rnd(st + 7) * 0.8).toFixed(2) + '" fill="#fff" opacity=".8"/>';
-      o += '<g class="aurora"><path d="M-10 70 C 60 20, 120 90, 200 40 S 330 60, 410 20 L 410 60 C 330 100, 260 70, 200 85 S 60 70, -10 110 Z" fill="url(#aur)"/>' +
-           '<path d="M-10 40 C 80 10, 150 60, 240 25 S 360 40, 410 10 L 410 30 C 350 60, 260 45, 230 55 S 80 40, -10 70 Z" fill="url(#aur)" opacity=".6"/></g>';
-    } else {
-      o += '<circle cx="330" cy="52" r="16" fill="#fff6d8" opacity=".9"/>';
+  /* =========================================================
+     Welt-Simulation
+     ========================================================= */
+  var cv = document.getElementById("world"), ctx = cv.getContext("2d");
+  var fg = makeCanvas(VW, VH), fctx = fg.getContext("2d");
+  ctx.imageSmoothingEnabled = false; fctx.imageSmoothingEnabled = false;
+  var camX = 120, T = 0;
+  var curSeason = null, terrain, layers, clouds = [], stars = [];
+  var entities = [], particles = [], trees = [];
+  var nestPos = null, geese = null, geeseTimer = 8;
+
+  (function () { var r = rng(5); for (var i = 0; i < 70; i++) stars.push({ x: r() * VW, y: r() * 80, b: r(), p: r() * 6 }); for (i = 0; i < 6; i++) clouds.push({ s: buildCloud(100 + i), x: r() * (VW + 80) - 40, y: 6 + r() * 36, v: 1.2 + r() * 2.2 }); })();
+
+  function ensureSeason() {
+    var s = season();
+    if (s === curSeason) return false;
+    curSeason = s;
+    particles = particles.filter(function (p) { return p.k !== "snow" && p.k !== "leaf" && p.k !== "fly"; });
+    terrain = buildTerrain(s);
+    layers = [buildLayer(0.1, "far", s), buildLayer(0.22, "near", s), buildLayer(0.5, "hills", s)];
+    return true;
+  }
+
+  function treeSlots() {
+    var xs = [];
+    for (var x = 22; x < WW - 16; x += 34) if (x < POOL_X0 - 18 || x > POOL_X1 + 18) xs.push(x);
+    var center = camX + VW / 2;
+    return xs.sort(function (a, b) { return Math.abs(a - 240) - Math.abs(b - 240); });
+  }
+  function layoutTrees() {
+    var slots = treeSlots(), list;
+    if (previewOn) {
+      var hs = state.habits.length ? state.habits : [{ id: "p1", name: "" }, { id: "p2", name: "" }, { id: "p3", name: "" }];
+      var each = Math.round(previewPts / hs.length);
+      list = hs.map(function (h) { return { id: h.id, name: h.name, s: each, had: true }; });
+    } else list = state.habits.map(function (h) { return { id: h.id, name: h.name, s: streak(h), had: best(h) > 0 }; });
+    trees = list.map(function (t, i) {
+      var x = slots[i % slots.length] + (i >= slots.length ? 12 : 0);
+      return { id: t.id, name: t.name, s: t.s, had: t.had, x: x, type: TREE_TYPES[i % TREE_TYPES.length], seed: i * 31 + 7 };
+    });
+    var tallest = null;
+    trees.forEach(function (t) { if (t.s >= 6 && (!tallest || t.s > tallest.s)) tallest = t; });
+    nestPos = tallest ? { x: tallest.x, y: surfY(tallest.x) - Math.round(treeHeight(tallest.s) * 0.62) } : null;
+  }
+
+  function walkable(sp, x) {
+    if (x < 6 || x > WW - 6) return false;
+    if (sp.habitat === "lake") return x > POOL_X0 - 40 && x < POOL_X1 + 40;
+    return !inPool(x) && !inPool(x + 4) && !inPool(x - 4);
+  }
+  function randomSpot(sp, inView) {
+    for (var i = 0; i < 40; i++) { var x = inView ? camX + 12 + Math.random() * (VW - 24) : 10 + Math.random() * (WW - 20); if (walkable(sp, x)) return x; }
+    return 40;
+  }
+
+  function modeFor(sp, s) {
+    if (sp.kind === "loon") return s === "winter" ? "away" : "swim";
+    if (sp.kind === "eagle") return "fly";
+    if (sp.hibernate && s === "winter") return "den";
+    return "walk";
+  }
+
+  function reconcile(fx) {
+    var want = population(points()), map = {}, s = curSeason;
+    want.forEach(function (w) { map[w.id] = w; });
+    entities.forEach(function (e) {
+      var w = map[e.id];
+      if (!w) { if (!e.leaving) { e.leaving = true; e.exitDir = e.x - camX < VW / 2 ? -1 : 1; } return; }
+      e.leaving = false;
+      if (w.stage !== e.stage) { e.stage = w.stage; if (fx) burst(e, "sparkle"); }
+      e.mode = modeFor(BYID[e.sp], s);
+    });
+    want.forEach(function (w) {
+      if (entities.some(function (e) { return e.id === w.id; })) return;
+      var sp = BYID[w.sp], mode = modeFor(sp, s), parent = w.kid ? entities.find(function (e) { return e.id === w.sp + "#0"; }) : null;
+      var e = { id: w.id, sp: w.sp, stage: w.stage, kid: w.kid, mode: mode, dir: Math.random() < 0.5 ? -1 : 1, state: "idle", timer: Math.random() * 3, anim: 0, frame: 0, phase: Math.random() * 6, y: 0, spd: 0.8 + Math.random() * 0.4 };
+      if (mode === "swim") e.x = POOL_X0 + 8 + Math.random() * (POOL_X1 - POOL_X0 - 16);
+      else if (mode === "fly") e.x = fx ? camX + 20 + Math.random() * (VW - 40) : Math.random() * WW;
+      else if (mode === "den") e.x = DEN_X0 + 8 + Math.random() * (DEN_X1 - DEN_X0 - 16);
+      else if (parent && fx) e.x = parent.x - parent.dir * 6;
+      else if (fx) { e.x = randomSpot(sp, true); e.state = "walk"; e.timer = 2; }
+      else e.x = randomSpot(sp);
+      if (mode === "fly" && fx) e.dir = 1;
+      entities.push(e);
+      if (fx) burst(e, w.kid ? "heart" : "sparkle");
+    });
+  }
+
+  function burst(e, kind) {
+    var spr = animalSprite(e.sp, e.stage, 0, curSeason), y = (e.y || surfY(e.x)) - spr.h;
+    for (var i = 0; i < (kind === "heart" ? 3 : 6); i++) particles.push({ k: kind, x: e.x + (Math.random() - 0.5) * spr.w, y: y + Math.random() * 4, vx: (Math.random() - 0.5) * 6, vy: -8 - Math.random() * 6, life: 1.6, max: 1.6, world: true });
+  }
+  function treeBurst(t) {
+    var h = treeHeight(t.s), y = surfY(t.x);
+    for (var i = 0; i < 10; i++) particles.push({ k: "sparkle", x: t.x + (Math.random() - 0.5) * h * 0.5, y: y - Math.random() * h, vx: 0, vy: -6 - Math.random() * 4, life: 1.4, max: 1.4, world: true });
+  }
+
+  function update(dt) {
+    T += dt;
+    if (REDUCED) dt = 0;
+    var s = curSeason;
+    entities = entities.filter(function (e) {
+      var sp = Object.assign({}, BYID[e.sp]); sp.speed *= e.spd || 1;
+      var parent = e.kid ? entities.find(function (p) { return p.id === e.sp + "#0" && !p.leaving; }) : null;
+      e.anim += dt;
+      if (e.mode === "den" || e.mode === "away") { if (e.leaving) return false; e.x = clamp(e.x, DEN_X0 + 10, DEN_X1 - 10); e.y = DEN_FLOOR - 1; e.frame = 0; return true; }
+      if (e.mode === "fly") {
+        var follow = parent && e.stage < 2 ? parent : null;
+        if (e.leaving) { e.x += e.exitDir * sp.speed * 1.5 * dt; e.dir = e.exitDir; return e.x > camX - 40 && e.x < camX + VW + 40 && e.x > -40 && e.x < WW + 40; }
+        if (follow) { var tx = follow.x - follow.dir * (14 + e.kid * 8); e.x += clamp(tx - e.x, -1, 1) * sp.speed * 1.2 * dt; e.dir = follow.dir; e.y = follow.y + 4 + e.kid * 3; }
+        else {
+          e.x += e.dir * sp.speed * dt;
+          if (e.x > WW + 30) e.dir = -1; if (e.x < -30) e.dir = 1;
+          e.y = 26 + Math.sin(T * 0.4 + e.phase) * 7 + e.kid * 6;
+        }
+        var cyc = (T * 0.35 + e.phase) % 3;
+        e.frame = cyc < 0.6 ? (Math.floor(T * 6) % 2 ? 1 : 2) : 0;
+        return true;
+      }
+      if (e.mode === "swim") {
+        e.timer -= dt;
+        if (e.timer <= 0) { e.state = Math.random() < 0.5 ? "idle" : "walk"; e.dir = Math.random() < 0.5 ? -1 : 1; e.timer = 2 + Math.random() * 4; }
+        if (parent && e.stage < 2) { var tx2 = parent.x - parent.dir * (e.stage === 0 ? 1 : 10 + e.kid * 6); e.x += clamp(tx2 - e.x, -1, 1) * sp.speed * 1.5 * dt; e.dir = parent.dir; }
+        else if (e.state === "walk") { e.x += e.dir * sp.speed * dt; if (e.x < POOL_X0 + 8 || e.x > POOL_X1 - 8) { e.dir *= -1; e.x = clamp(e.x, POOL_X0 + 8, POOL_X1 - 8); } }
+        if (e.leaving) return false;
+        e.y = WATER_Y + 3 + Math.round(Math.sin(T * 2 + e.phase) * 0.6);
+        return true;
+      }
+      // Laufen
+      var moving = false;
+      if (e.leaving) {
+        e.dir = e.exitDir; e.x += e.dir * sp.speed * 1.3 * dt; moving = true;
+        if (e.x < camX - 30 || e.x > camX + VW + 30 || e.x < -20 || e.x > WW + 20) return false;
+      } else if (parent && e.stage < 2) {
+        var target = parent.x - parent.dir * (5 + e.kid * 7);
+        if (Math.abs(target - e.x) > 3) { e.dir = target > e.x ? 1 : -1; var nx = e.x + e.dir * sp.speed * 1.1 * dt; if (walkable(sp, nx)) { e.x = nx; moving = true; } }
+        else e.dir = parent.dir;
+      } else {
+        e.timer -= dt;
+        if (e.timer <= 0) {
+          if (e.state === "walk" || Math.random() < 0.4) { e.state = "idle"; e.timer = 1.5 + Math.random() * 4; }
+          else { e.state = "walk"; e.dir = Math.random() < 0.5 ? -1 : 1; e.timer = 1.5 + Math.random() * 4; }
+        }
+        if (e.state === "walk") {
+          var nx2 = e.x + e.dir * sp.speed * dt;
+          if (walkable(sp, nx2)) { e.x = nx2; moving = true; } else { e.dir *= -1; }
+        }
+      }
+      if (moving) { e.frame = Math.floor(e.anim * (sp.speed / 4)) % 2; } else e.frame = 0;
+      if (sp.habitat === "lake" && inPool(e.x)) e.y = WATER_Y + Math.round(animalSprite(e.sp, e.stage, 0, s).h * 0.45);
+      else e.y = surfY(e.x) - 1 - (sp.hop && moving && e.frame ? 1 : 0);
+      return true;
+    });
+
+    // Partikel
+    particles = particles.filter(function (p) {
+      p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt;
+      if (p.k === "leaf") { p.x += Math.sin(T * 2 + p.ph) * 6 * dt; if (p.y >= surfY(p.x) - 1) p.life = Math.min(p.life, 0.01); }
+      if (p.k === "snow") { p.x += Math.sin(T + p.ph) * 4 * dt; if (p.y > VH) p.life = 0; }
+      return p.life > 0;
+    });
+    if (!REDUCED) weather(dt);
+
+    clouds.forEach(function (c) { c.x += c.v * dt; if (c.x > VW + 50) c.x = -c.s.w - 10; });
+    if (s === "autumn" && dayFactor() > 0.5) {
+      if (geese) { geese.x += 22 * dt; if (geese.x > VW + 60) geese = null; }
+      else if ((geeseTimer -= dt) <= 0) { geese = { x: -30, y: 18 + Math.random() * 20 }; geeseTimer = 35 + Math.random() * 20; }
     }
-    // Rocky Mountains
-    o += '<polygon points="0,150 55,72 95,118 150,58 205,128 250,80 300,132 350,66 400,120 400,170 0,170" fill="#7b8fa0"/>';
-    o += '<polygon points="55,72 44,88 52,86 60,92 66,86 74,90" fill="#f4f7fa"/><polygon points="150,58 138,76 148,73 156,80 163,73 170,78" fill="#f4f7fa"/><polygon points="350,66 338,84 347,80 356,87 362,80 368,84" fill="#f4f7fa"/>';
-    // ferne Baumreihe
-    var row = "";
-    for (var t = 0; t < 34; t++) {
-      var tx = t * 12 + rnd(t) * 6, th = 22 + rnd(t + 3) * 14;
-      row += '<polygon points="' + tx + "," + (172 - th) + " " + (tx - 6) + ",176 " + (tx + 6) + ',176" fill="#2f4a3a"/>';
-    }
-    o += row + '<rect x="0" y="174" width="400" height="80" fill="#5f7f4a"/>';
-    o += '<ellipse cx="300" cy="186" rx="88" ry="11" fill="url(#lake)"/>';
-    o += '<path d="M0 205 Q 100 194 200 204 T 400 200 L 400 250 L 0 250 Z" fill="#6f9152"/>';
-    // Pflanzen (eine pro Gewohnheit)
-    o += plantsRow(plants, function (x, base, p) {
-      var h = plantHeight(p.s);
-      if (p.s === 0) {
-        var col = p.had ? "#9a7b4f" : "#7fae5b";
-        return '<g><path d="M' + x + " " + base + " q -1 -6 0 -10" + '" stroke="' + col + '" stroke-width="1.6" fill="none"/><ellipse cx="' + (x - 3) + '" cy="' + (base - 8) + '" rx="3" ry="1.5" fill="' + col + '"/><ellipse cx="' + (x + 3) + '" cy="' + (base - 9) + '" rx="3" ry="1.5" fill="' + col + '"/></g>';
-      }
-      return '<g class="sway">' + spruce(x, base, h, "#2f6b45", "#245a39") + "</g>";
-    });
-    o += animals(unlocked);
-    return o;
   }
 
-  function oceanScene(pts, plants, unlocked) {
-    var o = "";
-    var deep = pts >= 135;
-    o += '<defs><linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + (deep ? "#0b3d63" : "#2a8fb8") + '"/><stop offset="1" stop-color="' + (deep ? "#031426" : "#0b3c63") + '"/></linearGradient>' +
-         '<linearGradient id="ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
-         '<radialGradient id="glow"><stop offset="0" stop-color="#7ff9ff" stop-opacity=".95"/><stop offset="1" stop-color="#7ff9ff" stop-opacity="0"/></radialGradient></defs>';
-    o += '<rect width="400" height="250" fill="url(#water)"/>';
-    o += '<g class="shimmer"><polygon points="60,0 95,0 150,250 70,250" fill="url(#ray)"/><polygon points="190,0 210,0 250,250 200,250" fill="url(#ray)"/><polygon points="290,0 330,0 380,250 300,250" fill="url(#ray)"/></g>';
-    // Blasen
-    for (var b = 0; b < 14; b++) o += '<circle cx="' + (rnd(b) * 400).toFixed(1) + '" cy="' + (20 + rnd(b + 40) * 180).toFixed(1) + '" r="' + (0.8 + rnd(b + 3) * 1.8).toFixed(2) + '" fill="none" stroke="#cfefff" stroke-opacity=".5" stroke-width=".6"/>';
-    // Felsen & Sand
-    o += '<path d="M0 200 Q 30 170 70 190 Q 90 175 110 198 L 110 250 L 0 250 Z" fill="#1f4a5c"/>';
-    o += '<path d="M300 205 Q 330 168 372 186 Q 395 180 400 190 L 400 250 L 300 250 Z" fill="#1f4a5c"/>';
-    o += '<path d="M0 222 Q 90 208 190 220 T 400 214 L 400 250 L 0 250 Z" fill="#d9c08d"/>';
-    o += '<path d="M0 236 Q 120 228 230 238 T 400 232 L 400 250 L 0 250 Z" fill="#c8ab73"/>';
-    o += '<circle cx="150" cy="238" r="2" fill="#f0dfb8"/><circle cx="270" cy="244" r="1.6" fill="#f0dfb8"/>';
-    if (deep) {
-      for (var g = 0; g < 26; g++) {
-        var gx = (rnd(g + 200) * 400).toFixed(1), gy = (30 + rnd(g + 300) * 190).toFixed(1);
-        o += '<circle class="shimmer" style="animation-delay:' + (rnd(g) * -6).toFixed(2) + 's" cx="' + gx + '" cy="' + gy + '" r="' + (2 + rnd(g + 5) * 4).toFixed(1) + '" fill="url(#glow)"/>';
+  function weather(dt) {
+    var s = curSeason, nf = nightFactor();
+    if (s === "autumn") {
+      var src = trees.filter(function (t) { return t.type !== "pine" && t.s > 0 && t.x > camX - 20 && t.x < camX + VW + 20; });
+      if (Math.random() < dt * (1.2 + src.length * 1.2)) {
+        var t = src.length && Math.random() < 0.8 ? src[Math.floor(Math.random() * src.length)] : null;
+        var h = t ? treeHeight(t.s) : 0;
+        var pal = ["#c2362b", "#e0573a", "#d9772b", "#f09a3e", "#e0b02b"];
+        particles.push({ k: "leaf", x: t ? t.x + (Math.random() - 0.5) * h * 0.5 : camX + Math.random() * VW, y: t ? surfY(t.x) - h * (0.5 + Math.random() * 0.4) : 0, vx: 2 + Math.random() * 3, vy: 7 + Math.random() * 6, life: 12, max: 12, c: pal[Math.floor(Math.random() * pal.length)], ph: Math.random() * 6, world: true });
       }
     }
-    o += plantsRow(plants, function (x, base, p) {
-      var h = plantHeight(p.s);
-      if (p.s === 0) {
-        var c0 = p.had ? "#8a7f6a" : "#e98a7b";
-        return '<g><circle cx="' + x + '" cy="' + (base - 3) + '" r="3.5" fill="' + c0 + '"/><circle cx="' + (x + 3) + '" cy="' + (base - 6) + '" r="2" fill="' + c0 + '"/></g>';
+    if (s === "winter" && particles.filter(function (p) { return p.k === "snow"; }).length < 70 && Math.random() < dt * 18) {
+      particles.push({ k: "snow", x: Math.random() * VW, y: -2, vx: -1, vy: 10 + Math.random() * 8, life: 20, max: 20, ph: Math.random() * 6, world: false });
+    }
+    if ((s === "summer" || s === "spring") && nf > 0.5 && particles.filter(function (p) { return p.k === "fly"; }).length < 16) {
+      particles.push({ k: "fly", x: camX + Math.random() * VW, y: 70 + Math.random() * 30, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 3, life: 6 + Math.random() * 6, max: 12, ph: Math.random() * 6, world: true });
+    }
+    if (s === "winter" && Math.random() < dt * 0.7 && entities.some(function (e) { return e.mode === "den"; })) {
+      particles.push({ k: "zzz", x: DEN_X0 + 18 + Math.random() * 20, y: DEN_FLOOR - 12, vx: 3, vy: -4, life: 2.4, max: 2.4, world: true });
+    }
+  }
+
+  /* Himmel & Licht */
+  var SKY = [[0, "#070b22", "#141c44"], [5, "#070b22", "#141c44"], [6.5, "#34407e", "#f0a060"], [8, "#4f9ae0", "#bfe3f5"], [17, "#4f9ae0", "#bfe3f5"], [19, "#3a4a92", "#f08a5d"], [20.5, "#070b22", "#141c44"], [24, "#070b22", "#141c44"]];
+  var NIGHT = [[0, 1], [5, 1], [6.5, 0.45], [8, 0], [17, 0], [19, 0.45], [20.5, 1], [24, 1]];
+  function interp(tab, h, i) { for (var k = 0; k < tab.length - 1; k++) if (h >= tab[k][0] && h <= tab[k + 1][0]) { var f = (h - tab[k][0]) / (tab[k + 1][0] - tab[k][0]); return typeof tab[k][i] === "number" ? tab[k][i] + (tab[k + 1][i] - tab[k][i]) * f : mix(tab[k][i], tab[k + 1][i], f); } return tab[0][i]; }
+  function nightFactor() { return interp(NIGHT, hourNow(), 1); }
+  function dayFactor() { return 1 - nightFactor(); }
+
+  function drawPixelDisc(c, cx, cy, r, col, col2) {
+    for (var y = -r; y <= r; y++) for (var x = -r; x <= r; x++) if (x * x + y * y <= r * r + r * 0.6) { c.fillStyle = (col2 && (x + y) < -r * 0.6) ? col2 : col; c.fillRect(cx + x, cy + y, 1, 1); }
+  }
+
+  function draw() {
+    var hr = hourNow(), nf = nightFactor(), s = curSeason, pts = points();
+    var top = interp(SKY, hr, 1), bot = interp(SKY, hr, 2);
+    // Himmel in Bändern
+    for (var b = 0; b < 16; b++) { ctx.fillStyle = mix(top, bot, b / 15); ctx.fillRect(0, b * 7, VW, 7); }
+    ctx.fillStyle = bot; ctx.fillRect(0, 112, VW, VH - 112);
+    // Sterne
+    if (nf > 0.05) stars.forEach(function (st) {
+      var tw = 0.55 + 0.45 * Math.sin(T * 2 + st.p);
+      ctx.globalAlpha = nf * tw * (0.4 + st.b * 0.6);
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round((st.x - camX * 0.04 + VW) % VW), Math.round(st.y), 1, 1);
+    });
+    ctx.globalAlpha = 1;
+    // Sonne / Mond
+    if (hr >= 5.5 && hr <= 20.5) { var f = (hr - 5.5) / 15; drawPixelDisc(ctx, Math.round(20 + f * 200), Math.round(78 - Math.sin(f * Math.PI) * 58), 6, "#ffe27a", "#fff6c8"); }
+    if (hr >= 19 || hr <= 7) { var mf = ((hr + 24 - 19) % 24) / 12; drawPixelDisc(ctx, Math.round(20 + mf * 200), Math.round(70 - Math.sin(mf * Math.PI) * 52), 5, "#e6e9f2", "#ffffff"); }
+    // Polarlichter
+    if (pts >= AURORA_AT && nf > 0.2) {
+      for (var x = 0; x < VW; x += 2) {
+        var wx = x + camX * 0.08, y0 = 10 + Math.sin(wx * 0.045 + T * 0.35) * 7 + Math.sin(wx * 0.11 + T * 0.6) * 3, len = 18 + Math.sin(wx * 0.07 + T * 0.5) * 8;
+        var a = nf * (0.55 + 0.45 * Math.sin(wx * 0.09 - T * 0.8));
+        ctx.globalAlpha = a * 0.25; ctx.fillStyle = "#b48cff"; ctx.fillRect(x, Math.round(y0 - 6), 2, 6);
+        ctx.globalAlpha = a * 0.55; ctx.fillStyle = "#46f2a4"; ctx.fillRect(x, Math.round(y0), 2, Math.round(len * 0.5));
+        ctx.globalAlpha = a * 0.25; ctx.fillRect(x, Math.round(y0 + len * 0.5), 2, Math.round(len * 0.5));
       }
-      var path = "M" + x + " " + base, leaves = "", segs = 6;
-      for (var i = 1; i <= segs; i++) {
-        var y = base - h * i / segs, dx = (i % 2 ? 1 : -1) * (2 + h * 0.03);
-        path += " Q " + (x + dx) + " " + (y + h / segs / 2) + " " + x + " " + y;
-        if (i < segs) leaves += '<ellipse cx="' + (x + dx * 1.6) + '" cy="' + y + '" rx="' + (2 + h * 0.05) + '" ry="' + (1 + h * 0.015) + '" fill="#8fae3a" transform="rotate(' + (dx > 0 ? -25 : 25) + " " + (x + dx * 1.6) + " " + y + ')"/>';
+      ctx.globalAlpha = 1;
+    }
+    // Wolken
+    clouds.forEach(function (c) { ctx.globalAlpha = 0.95 - nf * 0.7; ctx.drawImage(c.s.cv, Math.round(c.x), Math.round(c.y)); });
+    ctx.globalAlpha = 1;
+
+    // Vordergrund
+    fctx.clearRect(0, 0, VW, VH);
+    layers.forEach(function (L) { fctx.drawImage(L.cv, -Math.round(camX * L.f), 0); });
+    if (geese) for (var gi = 0; gi < 7; gi++) {
+      var off = [[0, 0], [-5, -2], [-10, -4], [-15, -6], [-5, 2], [-10, 4], [-15, 6]][gi], gx = Math.round(geese.x + off[0]), gy = Math.round(geese.y + off[1]), up = Math.floor(T * 5 + gi) % 2;
+      fctx.fillStyle = "#2a2a30"; fctx.fillRect(gx, gy, 1, 1); fctx.fillRect(gx - 1, gy - up, 1, 1); fctx.fillRect(gx + 1, gy - up, 1, 1);
+    }
+    // fliegende Adler
+    entities.forEach(function (e) { if (e.mode === "fly" && !(e.stage === 0 && nestPos)) drawEntity(e); });
+    fctx.drawImage(terrain, -Math.round(camX), 0);
+    // Bäume (mit Wind in den oberen Pixelreihen)
+    trees.forEach(function (t) {
+      var spr = treeSprite(t.type, t.s, t.had, s, t.seed), bx = Math.round(t.x - camX - spr.ax), by = surfY(t.x) - spr.ay - 1;
+      if (bx > VW || bx + spr.w < 0) return;
+      var wind = REDUCED || t.s === 0 ? 0 : Math.round(Math.sin(T * 1.1 + t.seed) * (spr.h0 > 30 ? 1.2 : 0.7));
+      var cut1 = Math.round(spr.ay * 0.35), cut2 = Math.round(spr.ay * 0.65);
+      fctx.drawImage(spr.cv, 0, 0, spr.w, cut1, bx + wind, by, spr.w, cut1);
+      fctx.drawImage(spr.cv, 0, cut1, spr.w, cut2 - cut1, bx + (wind > 0 ? 1 : wind < 0 ? -1 : 0) * (Math.abs(wind) > 1 ? 1 : 0), by + cut1, spr.w, cut2 - cut1);
+      fctx.drawImage(spr.cv, 0, cut2, spr.w, spr.h - cut2, bx, by + cut2, spr.w, spr.h - cut2);
+    });
+    if (nestPos && entities.some(function (e) { return e.sp === "eagle"; })) {
+      var nx = Math.round(nestPos.x - camX - NEST.ax), ny = Math.round(nestPos.y - NEST.ay);
+      var chicks = entities.filter(function (e) { return e.sp === "eagle" && e.stage === 0; }).length;
+      if (chicks) fctx.drawImage(NEST.cv, nx, ny);
+    }
+    // Tiere am Boden (große hinten)
+    var ground = entities.filter(function (e) { return e.mode === "walk" || e.mode === "den"; });
+    ground.sort(function (a, b) { return animalSprite(b.sp, b.stage, 0, s).h - animalSprite(a.sp, a.stage, 0, s).h; });
+    ground.forEach(drawEntity);
+    // Wasser
+    entities.forEach(function (e) { if (e.mode === "swim" && !(e.stage === 0)) drawEntity(e); });
+    entities.forEach(function (e) { if (e.mode === "swim" && e.stage === 0) { var p = entities.find(function (q) { return q.id === e.sp + "#0"; }); if (p) { var spr = animalSprite(e.sp, 0, 0, s); fctx.drawImage(p.dir > 0 ? spr.cv : spr.cvL, Math.round(p.x - camX - spr.ax - p.dir * (2 + e.kid * 3)), Math.round(p.y - 7 - spr.ay)); } } });
+    drawWater();
+    // Partikel in der Welt
+    particles.forEach(function (p) { if (p.k !== "fly") drawParticle(fctx, p); });
+    // Nacht-Tönung nur auf Landschaft
+    fctx.globalCompositeOperation = "source-atop";
+    if (nf > 0) { fctx.fillStyle = "rgba(10,16,48," + (0.58 * nf).toFixed(3) + ")"; fctx.fillRect(0, 0, VW, VH); }
+    var dusk = Math.max(0, 1 - Math.abs(nf - 0.45) / 0.3);
+    if (dusk > 0) { fctx.fillStyle = "rgba(255,130,60," + (0.14 * dusk).toFixed(3) + ")"; fctx.fillRect(0, 0, VW, VH); }
+    fctx.globalCompositeOperation = "source-over";
+    ctx.drawImage(fg, 0, 0);
+    // Glühwürmchen leuchten über der Nacht
+    particles.forEach(function (p) { if (p.k === "fly") drawParticle(ctx, p); });
+  }
+
+  function drawEntity(e) {
+    var spr = animalSprite(e.sp, e.stage, e.frame, curSeason);
+    var x = Math.round(e.x - camX - spr.ax), y = Math.round(e.y - spr.ay);
+    if (x > VW + 4 || x + spr.w < -4) return;
+    if (e.mode === "den" && spr.legs) {
+      // liegt schlafend: Beine ausblenden, Körper auf den Boden legen
+      var lh = spr.h - spr.legs;
+      fctx.drawImage(e.dir > 0 ? spr.cv : spr.cvL, 0, 0, spr.w, lh, x, y + spr.legs, spr.w, lh);
+      return;
+    }
+    fctx.drawImage(e.dir > 0 ? spr.cv : spr.cvL, x, y);
+  }
+
+  function drawWater() {
+    var s = curSeason;
+    for (var x = Math.max(POOL_X0, Math.floor(camX)); x < Math.min(POOL_X1, camX + VW); x++) {
+      var floor = surfY(x), sx = Math.round(x - camX);
+      if (s === "winter") {
+        fctx.fillStyle = "rgba(120,170,215,0.85)"; fctx.fillRect(sx, WATER_Y + 2, 1, floor - WATER_Y - 2);
+        fctx.fillStyle = hash(x, 1, 1) < 0.2 ? "#ffffff" : "#cfe6f5"; fctx.fillRect(sx, WATER_Y, 1, 2);
+      } else {
+        fctx.fillStyle = "rgba(40,110,190,0.62)"; fctx.fillRect(sx, WATER_Y, 1, floor - WATER_Y);
+        var sh = Math.sin(x * 0.6 + T * 3) + Math.sin(x * 0.23 - T * 1.7);
+        fctx.fillStyle = sh > 1.1 ? "#cfeaff" : "#5fa8e0"; fctx.fillRect(sx, WATER_Y, 1, 1);
+        if (Math.sin(x * 0.4 - T * 2.2) > 0.92) { fctx.fillStyle = "rgba(200,235,255,0.5)"; fctx.fillRect(sx, WATER_Y + 3 + (x % 3), 1, 1); }
       }
-      var coral = h > 50 ? '<path d="M' + (x + 10) + " " + base + " l0 -14 m0 6 l-5 -6 m5 2 l5 -7" + '" stroke="#ff7f6e" stroke-width="2.4" stroke-linecap="round" fill="none"/>' : "";
-      return coral + '<g class="sway"><path d="' + path + '" stroke="#6f9a2c" stroke-width="' + (1.6 + h * 0.03).toFixed(2) + '" fill="none" stroke-linecap="round"/>' + leaves + "</g>";
+    }
+  }
+
+  var HEART = [[1, 0], [3, 0], [0, 1], [1, 1], [2, 1], [3, 1], [4, 1], [1, 2], [2, 2], [3, 2], [2, 3]];
+  var ZED = [[0, 0], [1, 0], [2, 0], [1, 1], [0, 2], [1, 2], [2, 2]];
+  function drawParticle(c, p) {
+    var x = Math.round(p.world ? p.x - camX : p.x), y = Math.round(p.y), a = Math.min(1, p.life / p.max * 2);
+    c.globalAlpha = a;
+    if (p.k === "heart") { HEART.forEach(function (q) { c.fillStyle = q[0] === 1 && q[1] === 1 ? "#ffc2d4" : "#ff4f86"; c.fillRect(x + q[0], y + q[1], 1, 1); }); }
+    else if (p.k === "sparkle") { var on = Math.floor(p.life * 10) % 2; c.fillStyle = "#fff3a3"; c.fillRect(x, y - on, 1, 1 + 2 * on); c.fillRect(x - on, y, 1 + 2 * on, 1); c.fillStyle = "#ffffff"; c.fillRect(x, y, 1, 1); }
+    else if (p.k === "leaf") { c.fillStyle = p.c; c.fillRect(x, y, 2, 1); if (Math.sin(T * 4 + p.ph) > 0) c.fillRect(x, y + 1, 1, 1); }
+    else if (p.k === "snow") { c.fillStyle = "#ffffff"; c.fillRect(x, y, 1, 1); }
+    else if (p.k === "zzz") { c.fillStyle = "#cfd8ff"; ZED.forEach(function (q) { c.fillRect(x + q[0], y + q[1], 1, 1); }); }
+    else if (p.k === "fly") {
+      var g = 0.5 + 0.5 * Math.sin(T * 3 + p.ph);
+      c.globalAlpha = a * g * nightFactor(); c.fillStyle = "rgba(220,255,120,0.35)"; c.fillRect(x - 1, y - 1, 3, 3); c.globalAlpha = a * g * nightFactor(); c.fillStyle = "#f4ff9a"; c.fillRect(x, y, 1, 1);
+      p.vx += (Math.random() - 0.5) * 0.8; p.vy += (Math.random() - 0.5) * 0.5; p.vx = clamp(p.vx, -5, 5); p.vy = clamp(p.vy, -3, 3);
+    }
+    c.globalAlpha = 1;
+  }
+
+  /* =========================================================
+     Steuerung der Welt
+     ========================================================= */
+  var drag = null, hinted = false;
+  function setCam(x) { camX = clamp(x, 0, WW - VW); }
+  function hideHint() { if (!hinted) { hinted = true; document.getElementById("drag-hint").style.opacity = "0"; } }
+  cv.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, cam: camX, moved: false, id: e.pointerId }; });
+  cv.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var r = cv.getBoundingClientRect(), dx = (e.clientX - drag.x) * VW / r.width;
+    if (Math.abs(dx) > 2 && !drag.moved) { drag.moved = true; try { cv.setPointerCapture(drag.id); } catch (err) {} cv.classList.add("dragging"); hideBubble(); }
+    if (drag.moved) { setCam(drag.cam - dx); hideHint(); }
+  });
+  function endDrag(e) { if (!drag) return; var d = drag; drag = null; cv.classList.remove("dragging"); if (!d.moved && e.type === "pointerup") tap(e); }
+  cv.addEventListener("pointerup", endDrag);
+  cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft") { setCam(camX - 20); hideHint(); e.preventDefault(); } if (e.key === "ArrowRight") { setCam(camX + 20); hideHint(); e.preventDefault(); } });
+  var panAnim = null;
+  function panBy(d) { var target = clamp(camX + d, 0, WW - VW); hideHint(); hideBubble(); if (REDUCED) { setCam(target); return; } panAnim = { to: target }; }
+  document.getElementById("pan-l").addEventListener("click", function () { panBy(-120); });
+  document.getElementById("pan-r").addEventListener("click", function () { panBy(120); });
+
+  var bubble = document.getElementById("bubble"), bubbleTimer;
+  function hideBubble() { bubble.hidden = true; }
+  function showBubble(wx, wy, title, sub) {
+    var r = cv.getBoundingClientRect(), sc = r.width / VW;
+    bubble.innerHTML = "";
+    bubble.appendChild(document.createTextNode(title));
+    if (sub) { var sm = document.createElement("small"); sm.textContent = sub; bubble.appendChild(sm); }
+    bubble.style.left = clamp((wx - camX) * sc, 60, r.width - 60) + "px";
+    bubble.style.top = Math.max(30, (wy) * sc - 6) + "px";
+    bubble.hidden = false;
+    clearTimeout(bubbleTimer); bubbleTimer = setTimeout(hideBubble, 3500);
+  }
+  function tap(e) {
+    var r = cv.getBoundingClientRect(), wx = camX + (e.clientX - r.left) * VW / r.width, wy = (e.clientY - r.top) * VH / r.height;
+    var hit = null;
+    entities.forEach(function (en) {
+      if (en.mode === "away") return;
+      var spr = animalSprite(en.sp, en.stage, 0, curSeason), x0 = en.x - spr.ax - 3, y0 = en.y - spr.ay - 3;
+      if (wx >= x0 && wx <= x0 + spr.w + 6 && wy >= y0 && wy <= y0 + spr.h + 6) hit = en;
     });
-    o += animals(unlocked);
-    return o;
+    if (hit) {
+      var sp = BYID[hit.sp], fam = familySize(hit.sp, points());
+      var sub = hit.mode === "den" ? "hält Winterschlaf" : hit.kid ? (hit.stage === 2 ? "erwachsener Nachwuchs" : hit.stage === 1 ? "wächst noch" : "frisch geboren") : (hit.stage === 1 ? "gerade eingezogen" : "Familie: " + fam);
+      showBubble(hit.x, hit.y - animalSprite(hit.sp, hit.stage, 0, curSeason).ay, displayName(sp, hit.stage), sub);
+      return;
+    }
+    for (var i = 0; i < trees.length; i++) {
+      var t = trees[i], spr2 = treeSprite(t.type, t.s, t.had, curSeason, t.seed), bx = t.x - spr2.ax, by = surfY(t.x) - spr2.ay;
+      if (wx >= bx - 2 && wx <= bx + spr2.w + 2 && wy >= by - 2 && wy <= surfY(t.x) + 2) {
+        showBubble(t.x, by + 4, t.name || "Vorschau-Baum", t.s + (t.s === 1 ? " Tag" : " Tage") + " · " + treeStageName(t.s, t.had));
+        return;
+      }
+    }
+    hideBubble();
   }
 
-  function plantsRow(plants, draw) {
-    var o = "", n = plants.length;
-    plants.forEach(function (p, i) {
-      var x = Math.round(36 + 328 * (i + 0.5) / n);
-      var base = 238 + (i % 2) * 6;
-      o += draw(x, base, p);
-      if (p.name) o += '<text x="' + x + '" y="' + (base + 7) + '" font-size="5.5" text-anchor="middle" fill="#ffffff" font-family="Figtree, system-ui, sans-serif" font-weight="600" style="paint-order:stroke" stroke="rgba(0,0,0,.45)" stroke-width="1.4">' + esc(p.name.length > 16 ? p.name.slice(0, 15) + "…" : p.name) + "</text>";
-    });
-    return o;
+  /* =========================================================
+     Oberfläche
+     ========================================================= */
+  function spriteToCanvas(spr, target, silhouette) {
+    target.width = spr.w; target.height = spr.h;
+    var c = target.getContext("2d"); c.imageSmoothingEnabled = false;
+    c.drawImage(spr.cv, 0, 0);
+    if (silhouette) { c.globalCompositeOperation = "source-atop"; c.fillStyle = "#33427a"; c.fillRect(0, 0, spr.w, spr.h); c.globalCompositeOperation = "source-over"; }
+    target.style.width = (spr.w * 3) + "px"; target.style.height = (spr.h * 3) + "px";
   }
 
-  function animals(unlocked) {
-    var o = "";
-    unlocked.forEach(function (u, i) {
-      if (u.special) return;
-      var isNew = lastRenderedUnlocks && lastRenderedUnlocks.indexOf(u.name) === -1;
-      var delay = "animation-delay:" + (rnd(i + 11) * -8).toFixed(2) + "s";
-      var glyph = function (dx, dy, size) {
-        return '<text x="' + (u.x + dx) + '" y="' + (u.y + dy) + '" font-size="' + size + '" text-anchor="middle"' + (u.tint ? ' style="filter:' + u.tint + '"' : "") + ">" + u.em + "</text>";
-      };
-      var inner = u.school ? glyph(0, 0, u.s) + glyph(14, -8, u.s * 0.85) + glyph(26, 4, u.s * 0.9) + glyph(10, 10, u.s * 0.75) : glyph(0, 0, u.s);
-      o += '<g class="' + u.a + '" style="' + delay + '"><g' + (isNew ? ' class="appear"' : "") + ">" + inner + "</g></g>";
-    });
-    return o;
-  }
-
-  function unlockedFor(world, pts) { return WORLDS[world].unlocks.filter(function (u) { return pts >= u.at; }); }
-
-  function renderScene() {
-    var pts = shownPoints(), w = state.world;
-    var un = unlockedFor(w, pts);
-    var plants = plantStreaks();
-    if (!plants.length) plants = [];
-    svg.innerHTML = w === "forest" ? forestScene(pts, plants, un) : oceanScene(pts, plants, un);
-    svg.setAttribute("aria-label", WORLDS[w].label + " mit " + un.length + " freigeschalteten Bewohnern");
-    lastRenderedUnlocks = un.map(function (u) { return u.name; });
-    var badge = document.getElementById("badge");
-    badge.textContent = previewOn ? "Vorschau · " + pts + " Pkt." : WORLDS[w].label;
-    badge.dataset.preview = previewOn ? "true" : "false";
-  }
-
-  /* ---------- Fortschritt & Sammlung ---------- */
   function renderProgress() {
-    var pts = totalPoints(), list = WORLDS[state.world].unlocks;
+    var pts = realPoints(), next = SPECIES.filter(function (s) { return s.at > pts; })[0];
+    var aurora = pts < AURORA_AT;
     document.getElementById("points").firstChild.nodeValue = pts;
-    var next = list.filter(function (u) { return u.at > pts; })[0];
-    var prevAt = list.filter(function (u) { return u.at <= pts; }).reduce(function (a, u) { return Math.max(a, u.at); }, 0);
-    var text = document.getElementById("next-text"), bar = document.getElementById("next-bar");
+    var prevAt = SPECIES.concat([{ at: AURORA_AT }]).filter(function (s) { return s.at <= pts; }).reduce(function (a, s) { return Math.max(a, s.at); }, 0);
+    var text = document.getElementById("next-text"), bar = document.getElementById("next-bar"), icon = document.getElementById("next-icon");
     if (next) {
-      text.textContent = "Noch " + (next.at - pts) + " Pkt. bis " + next.em + " " + next.name;
+      text.textContent = "Noch " + (next.at - pts) + " Pkt. bis " + next.name;
+      var nf0 = next.kind === "eagle" ? 1 : 0, nspr = animalSprite(next.id, 2, nf0, curSeason);
+      spriteToCanvas(nspr, icon, false);
+      icon.style.width = (nspr.w * 2) + "px"; icon.style.height = (nspr.h * 2) + "px";
+      icon.hidden = false;
       bar.style.width = Math.round(100 * (pts - prevAt) / (next.at - prevAt)) + "%";
-    } else {
-      text.textContent = "Alles freigeschaltet. Deine Welt ist komplett!";
-      bar.style.width = "100%";
-    }
+    } else if (aurora) {
+      text.textContent = "Noch " + (AURORA_AT - pts) + " Pkt. bis zu den Nordlichtern"; icon.hidden = true;
+      bar.style.width = Math.round(100 * (pts - prevAt) / (AURORA_AT - prevAt)) + "%";
+    } else { text.textContent = "Alle Tiere und die Nordlichter sind da. Jetzt wachsen die Familien."; icon.hidden = true; bar.style.width = "100%"; }
   }
 
-  function renderCollection() {
-    var pts = totalPoints(), list = WORLDS[state.world].unlocks, got = 0;
-    var ul = document.getElementById("collection");
-    ul.innerHTML = list.map(function (u) {
-      var on = pts >= u.at; if (on) got++;
-      return '<li class="' + (on ? "" : "locked") + '"><span class="em" aria-hidden="true"' + (u.tint && on ? ' style="filter:' + u.tint + '"' : "") + ">" + u.em + '</span><span class="nm">' + esc(u.name) + '</span><span class="pt">ab ' + u.at + " Pkt.</span></li>";
-    }).join("");
-    document.getElementById("coll-count").textContent = got + " von " + list.length + " freigeschaltet";
+  function renderInventory() {
+    var pts = realPoints(), ul = document.getElementById("inventory"), got = 0, s = curSeason;
+    ul.innerHTML = "";
+    SPECIES.forEach(function (sp) {
+      var on = pts >= sp.at, li = document.createElement("li"), c = document.createElement("canvas");
+      li.className = "slot px" + (on ? "" : " locked");
+      if (on) got++;
+      var iconFrame = sp.kind === "eagle" ? 1 : 0;
+      spriteToCanvas(animalSprite(sp.id, 2, iconFrame, s), c, !on);
+      var spr = animalSprite(sp.id, 2, iconFrame, s), k = Math.min(4, 48 / spr.h, 92 / spr.w);
+      c.style.width = (spr.w * k) + "px"; c.style.height = (spr.h * k) + "px";
+      c.setAttribute("aria-hidden", "true");
+      var pic = document.createElement("div"); pic.className = "pic"; pic.appendChild(c); li.appendChild(pic);
+      var nm = document.createElement("span"); nm.className = "nm"; nm.textContent = sp.name; li.appendChild(nm);
+      var st = document.createElement("span"); st.className = "st";
+      if (!on) st.textContent = "ab " + sp.at + " Pkt.";
+      else {
+        var fam = familySize(sp.id, pts), mode = modeFor(sp, s);
+        var f = document.createElement("span"); f.className = "fam"; f.textContent = "×" + fam; li.appendChild(f);
+        st.textContent = mode === "den" ? "im Winterschlaf" : mode === "away" ? "im Süden, kommt im Frühling" : fam === 1 ? (pts - sp.at < 4 ? "jung, wächst noch" : "Nachwuchs ab " + (sp.at + 8) + " Pkt.") : fam === 2 ? "nächstes Junges ab " + (sp.at + 18) + " Pkt." : "ganze Familie";
+      }
+      li.appendChild(st);
+      ul.appendChild(li);
+    });
+    var au = document.createElement("li"), on2 = pts >= AURORA_AT;
+    au.className = "slot px" + (on2 ? "" : " locked");
+    var ac = document.createElement("canvas"); ac.width = 16; ac.height = 12; ac.setAttribute("aria-hidden", "true");
+    var actx = ac.getContext("2d");
+    for (var x = 0; x < 16; x++) { var y0 = 3 + Math.round(Math.sin(x * 0.6) * 2); actx.fillStyle = on2 ? "#46f2a4" : "#33427a"; actx.fillRect(x, y0, 1, 5); actx.fillStyle = on2 ? "#b48cff" : "#33427a"; actx.fillRect(x, y0 - 2, 1, 2); }
+    ac.style.width = "48px"; ac.style.height = "36px";
+    var apic = document.createElement("div"); apic.className = "pic"; apic.appendChild(ac); au.appendChild(apic);
+    var an = document.createElement("span"); an.className = "nm"; an.textContent = "Nordlichter"; au.appendChild(an);
+    var ast = document.createElement("span"); ast.className = "st"; ast.textContent = on2 ? "nachts am Himmel" : "ab " + AURORA_AT + " Pkt."; au.appendChild(ast);
+    ul.appendChild(au);
+    if (on2) got++;
+    document.getElementById("inv-count").textContent = got + " von " + (SPECIES.length + 1) + " entdeckt";
   }
 
-  /* ---------- Gewohnheiten ---------- */
-  var WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
-  var armedDelete = null;
-
+  var WD = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"], armedDelete = null;
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function renderHabits() {
     var ul = document.getElementById("habits"), today = new Date();
     document.getElementById("today-label").textContent = today.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
     document.getElementById("sample-note").hidden = !state.sample;
-    if (!state.habits.length) {
-      ul.innerHTML = '<li><p class="empty">Noch keine Gewohnheit. Leg unten deine erste an. Jede Gewohnheit pflanzt einen ' + WORLDS[state.world].plantWord + " in deine Welt.</p></li>";
-      return;
-    }
-    ul.innerHTML = state.habits.map(function (h) {
-      var s = streak(h), b = best(h), doneToday = !!h.days[dayKey(today)];
-      var week = "";
-      for (var i = 6; i >= 1; i--) {
-        var d = addDays(today, -i), k = dayKey(d);
-        week += '<button type="button" class="day" data-id="' + h.id + '" data-day="' + k + '" aria-pressed="' + !!h.days[k] + '" aria-label="' + d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "numeric" }) + '">' + WD[d.getDay()] + "<i></i></button>";
+    if (!state.habits.length) { ul.innerHTML = '<li class="panel px"><p class="empty">Noch keine Gewohnheit. Leg unten deine erste an. Jede Gewohnheit pflanzt einen Baum in deinen Wald.</p></li>'; return; }
+    ul.innerHTML = state.habits.map(function (h, i) {
+      var s = streak(h), b = best(h), done = !!h.days[dayKey(today)], week = "";
+      for (var k = 6; k >= 1; k--) {
+        var d = addDays(today, -k), key = dayKey(d);
+        week += '<button type="button" class="day" data-id="' + h.id + '" data-day="' + key + '" aria-pressed="' + !!h.days[key] + '" aria-label="' + d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "numeric" }) + '">' + WD[d.getDay()] + "<i></i></button>";
       }
-      return '<li class="habit">' +
-        '<div class="habit-main"><div class="habit-title"><strong>' + esc(h.name) + '</strong><span class="streak"><b>' + s + "</b> " + (s === 1 ? "Tag" : "Tage") + " Streak · Rekord " + b + "</span></div>" +
+      return '<li class="habit panel px"><canvas class="mini" width="60" height="90" data-tree="' + i + '" aria-hidden="true"></canvas>' +
+        '<div class="habit-main"><div class="habit-title"><strong>' + esc(h.name) + '</strong><span class="meta"><b>' + s + "</b> " + (s === 1 ? "Tag" : "Tage") + " · " + treeStageName(s, b > 0) + " · Rekord " + b + "</span></div>" +
         '<div class="week">' + week + "</div></div>" +
-        '<button type="button" class="check" data-id="' + h.id + '" data-day="' + dayKey(today) + '" aria-pressed="' + doneToday + '" aria-label="' + esc(h.name) + ' heute erledigt">' + (doneToday ? "✓" : "<span>Heute</span>") + "</button>" +
-        '<div class="habit-actions"><button type="button" class="del" data-del="' + h.id + '" data-armed="' + (armedDelete === h.id) + '">' + (armedDelete === h.id ? "Wirklich löschen?" : "Löschen") + "</button></div>" +
-        "</li>";
+        '<button type="button" class="check px" data-id="' + h.id + '" data-day="' + dayKey(today) + '" aria-pressed="' + done + '" aria-label="' + esc(h.name) + ' heute erledigt">' + (done ? "✓" : "Heute") + "</button>" +
+        '<div class="habit-actions"><button type="button" class="del" data-del="' + h.id + '" data-armed="' + (armedDelete === h.id) + '">' + (armedDelete === h.id ? "Wirklich löschen?" : "Löschen") + "</button></div></li>";
     }).join("");
+    ul.querySelectorAll("canvas.mini").forEach(function (c) {
+      var i = +c.dataset.tree, h = state.habits[i], s = streak(h), spr = treeSprite(TREE_TYPES[i % TREE_TYPES.length], s, best(h) > 0, curSeason, i * 31 + 7);
+      var x = c.getContext("2d"); x.imageSmoothingEnabled = false; x.clearRect(0, 0, 60, 90);
+      var sc = Math.min(84 / (spr.ay + 1), 58 / spr.w); sc = sc >= 1 ? Math.floor(sc) : sc;
+      x.drawImage(spr.cv, 0, 0, spr.w, spr.ay + 1, Math.round(30 - spr.ax * sc), Math.round(88 - (spr.ay + 1) * sc), Math.round(spr.w * sc), Math.round((spr.ay + 1) * sc));
+      x.fillStyle = curSeason === "winter" ? "#eef4fb" : "#5aa83c"; x.fillRect(4, 88, 52, 2);
+    });
   }
 
-  function renderAll() {
-    document.documentElement.dataset.world = state.world;
-    document.querySelector('meta[name="theme-color"]').setAttribute("content", state.world === "ocean" ? "#071a2b" : "#e9eee6");
-    ["forest", "ocean"].forEach(function (w) { document.getElementById("w-" + w).setAttribute("aria-pressed", state.world === w); });
-    renderScene(); renderProgress(); renderCollection(); renderHabits();
+  function renderBadge() {
+    var badge = document.getElementById("badge"), hr = hourNow(), hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60);
+    var timeTxt = state.view.time === "auto" ? (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm : state.view.time === "day" ? "Tag" : "Nacht";
+    badge.textContent = previewOn ? "Vorschau · " + previewPts + " Pkt." : SEASON_DE[curSeason] + " · " + timeTxt;
+    badge.dataset.preview = previewOn ? "true" : "false";
+  }
+
+  function renderControls() {
+    document.querySelectorAll("[data-time]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.time === state.view.time); });
+    document.querySelectorAll("[data-season]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.season === state.view.season); });
+  }
+
+  function renderAll(fx) {
+    var changed = ensureSeason();
+    layoutTrees();
+    reconcile(fx && !changed);
+    renderProgress(); renderInventory(); renderHabits(); renderBadge(); renderControls();
     document.getElementById("backup").value = JSON.stringify(state);
   }
 
-  /* ---------- Toast ---------- */
   var toastTimer;
-  function toast(msg) {
-    var t = document.getElementById("toast");
-    t.textContent = msg; t.classList.add("show");
-    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3200);
+  function toast(msg) { var t = document.getElementById("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove("show"); }, 3600); }
+
+  function describeChange(before, after) {
+    var a = population(before), b = population(after), ia = {}, msgs = [];
+    a.forEach(function (p) { ia[p.id] = p; });
+    var ib = {}; b.forEach(function (p) { ib[p.id] = p; });
+    b.forEach(function (p) {
+      var sp = BYID[p.sp], o = ia[p.id];
+      if (!o) msgs.push([p.kid ? 2 : 3, p.kid ? "Nachwuchs! " + sp.baby + " geboren." : sp.name + " ist in deinen Wald gezogen!"]);
+      else if (p.stage > o.stage) msgs.push([1, p.stage === 2 ? (p.kid ? "Dein " + sp.baby + " ist jetzt erwachsen." : sp.name + " ist ausgewachsen.") : sp.baby + " ist ein Stück gewachsen."]);
+    });
+    a.forEach(function (p) { if (!ib[p.id]) msgs.push([0, (p.kid ? displayName(BYID[p.sp], p.stage) : BYID[p.sp].name) + " ist weitergezogen."]); });
+    if (before < AURORA_AT && after >= AURORA_AT) msgs.push([4, "Nordlichter! Schau heute Nacht in den Himmel."]);
+    msgs.sort(function (x, y) { return y[0] - x[0]; });
+    return msgs.length ? msgs[0][1] : null;
   }
 
-  /* ---------- Ereignisse ---------- */
   function toggleDay(id, day) {
     var h = state.habits.find(function (x) { return x.id === id; });
     if (!h) return;
-    var before = totalPoints();
+    var before = realPoints(), sBefore = streak(h);
     if (h.days[day]) delete h.days[day]; else h.days[day] = true;
     save();
-    var after = totalPoints();
-    var gained = WORLDS[state.world].unlocks.filter(function (u) { return u.at > before && u.at <= after; });
-    var lost = WORLDS[state.world].unlocks.filter(function (u) { return u.at <= before && u.at > after; });
-    renderAll();
-    if (gained.length) toast("Neu in deiner Welt: " + gained.map(function (u) { return u.em + " " + u.name; }).join(", "));
-    else if (lost.length) toast(lost.map(function (u) { return u.name; }).join(", ") + " ist weitergezogen.");
+    var after = realPoints(), sAfter = streak(h);
+    renderAll(!previewOn);
+    var msg = previewOn ? null : describeChange(before, after);
+    var t = trees.find(function (x) { return x.id === id; });
+    if (t && sAfter > sBefore && !previewOn) { treeBurst(t); if (t.x < camX + 10 || t.x > camX + VW - 10) setCam(t.x - VW / 2); }
+    if (msg) toast(msg);
+    else if (sAfter > sBefore) toast(h.name + ": " + sAfter + (sAfter === 1 ? " Tag" : " Tage") + ", dein Baum wächst.");
   }
 
   document.addEventListener("click", function (e) {
     var t = e.target.closest("button");
     if (!t) return;
-    if (t.dataset.world) {
-      state.world = t.dataset.world; lastRenderedUnlocks = null; save(); renderAll(); return;
-    }
+    if (t.dataset.time) { state.view.time = t.dataset.time; save(); renderBadge(); renderControls(); return; }
+    if (t.dataset.season) { state.view.season = t.dataset.season; save(); renderAll(false); return; }
     if (t.dataset.id && t.dataset.day) { toggleDay(t.dataset.id, t.dataset.day); return; }
     if (t.dataset.del) {
-      if (armedDelete === t.dataset.del) {
-        state.habits = state.habits.filter(function (h) { return h.id !== t.dataset.del; });
-        armedDelete = null; save(); renderAll();
-      } else {
-        armedDelete = t.dataset.del; renderHabits();
-        setTimeout(function () { if (armedDelete) { armedDelete = null; renderHabits(); } }, 4000);
-      }
+      if (armedDelete === t.dataset.del) { state.habits = state.habits.filter(function (h) { return h.id !== t.dataset.del; }); armedDelete = null; save(); renderAll(true); }
+      else { armedDelete = t.dataset.del; renderHabits(); setTimeout(function () { if (armedDelete) { armedDelete = null; renderHabits(); } }, 4000); }
       return;
     }
-    if (t.id === "clear-sample") {
-      state.habits = []; state.sample = false; lastRenderedUnlocks = null; save(); renderAll(); return;
-    }
+    if (t.id === "clear-sample") { state.habits = []; state.sample = false; save(); renderAll(true); return; }
     if (t.id === "copy-backup") {
       var ta = document.getElementById("backup");
-      var done = function () { toast("Backup kopiert."); };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); toast("Text markiert. Jetzt kopieren."); });
-      } else { ta.select(); toast("Text markiert. Jetzt kopieren."); }
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function () { toast("Backup kopiert."); }, function () { ta.select(); toast("Text markiert. Jetzt kopieren."); });
+      else { ta.select(); toast("Text markiert. Jetzt kopieren."); }
       return;
     }
     if (t.id === "import-backup") {
-      try {
-        var s = JSON.parse(document.getElementById("backup").value);
-        if (!s || !Array.isArray(s.habits)) throw new Error();
-        state = s; state.sample = false; save(); renderAll(); toast("Backup geladen.");
-      } catch (err) { toast("Das ist kein gültiges Backup. Füge den kompletten kopierten Text ein."); }
+      try { var s = JSON.parse(document.getElementById("backup").value); if (!s || !Array.isArray(s.habits)) throw new Error(); s.view = s.view || { time: "auto", season: "auto" }; delete s.world; state = s; state.sample = false; save(); renderAll(false); toast("Backup geladen."); }
+      catch (err) { toast("Das ist kein gültiges Backup. Füge den kompletten kopierten Text ein."); }
     }
   });
 
@@ -647,22 +1389,44 @@ textarea { width: 100%; min-height: 90px; border-radius: 10px; border: 1px solid
     if (!name) { input.focus(); return; }
     if (state.sample) { state.habits = []; state.sample = false; }
     state.habits.push({ id: uid(), name: name, days: {} });
-    input.value = ""; save(); renderAll();
-    toast("Neuer " + WORLDS[state.world].plantWord + " gepflanzt: " + name);
+    input.value = ""; save(); renderAll(true);
+    var t = trees.find(function (x) { return x.name === name; }); if (t) { setCam(t.x - VW / 2); treeBurst(t); }
+    toast("Neuer Setzling gepflanzt: " + name);
   });
 
   var pvOn = document.getElementById("preview-on"), pvPts = document.getElementById("preview-pts"), pvOut = document.getElementById("preview-out");
-  pvOn.addEventListener("change", function () { previewOn = pvOn.checked; pvPts.disabled = !previewOn; renderScene(); });
-  pvPts.addEventListener("input", function () { previewPts = +pvPts.value; pvOut.textContent = previewPts + " Pkt."; if (previewOn) renderScene(); });
+  pvOn.addEventListener("change", function () { previewOn = pvOn.checked; pvPts.disabled = !previewOn; layoutTrees(); reconcile(true); renderBadge(); });
+  pvPts.addEventListener("input", function () { previewPts = +pvPts.value; pvOut.textContent = previewPts + " Pkt."; if (previewOn) { layoutTrees(); reconcile(true); renderBadge(); } });
 
-  // Um Mitternacht (oder beim Zurückkehren zur App) neu rechnen
-  var shownDay = dayKey(new Date());
-  function maybeRollover() { var k = dayKey(new Date()); if (k !== shownDay) { shownDay = k; renderAll(); } }
-  document.addEventListener("visibilitychange", maybeRollover);
-  setInterval(maybeRollover, 60000);
+  var shownDay = null, lastSeasonCheck = 0;
+  function tick() {
+    var k = dayKey(new Date());
+    if (k !== shownDay) { shownDay = k; renderAll(false); }
+    else if (ensureSeason()) renderAll(false);
+    renderBadge();
+  }
+  document.addEventListener("visibilitychange", tick);
+  setInterval(tick, 30000);
 
+  /* =========================================================
+     Start
+     ========================================================= */
   state = load();
-  renderAll();
+  ensureSeason();
+  layoutTrees();
+  if (trees.length) setCam(trees[0].x - VW / 2);
+  tick();
+  var last = performance.now(), lastDraw = 0;
+  function frame(now) {
+    var dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (panAnim) { var d = panAnim.to - camX; if (Math.abs(d) < 1) { setCam(panAnim.to); panAnim = null; } else setCam(camX + d * Math.min(1, dt * 6)); }
+    update(dt);
+    if (now - lastDraw >= 33) { draw(); lastDraw = now; }
+    requestAnimationFrame(frame);
+  }
+  draw();
+  requestAnimationFrame(frame);
+  window.__habitat = { setCam: setCam, entities: function () { return entities; } };
 })();
 </script>
 </body>
