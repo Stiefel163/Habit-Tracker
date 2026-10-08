@@ -1,23 +1,47 @@
-# Habitat – Habit Tracker
+# Comeback
 
-Ein Habit Tracker im Stil von *Forest*, gezeichnet als Pixel-Art im Terraria-Look: Je länger du deine Streaks hältst, desto lebendiger wird dein kanadischer Wald.
+A personal, mobile-first habit tracker for an exchange semester: sleep rhythm, training, Spanish, driving theory, content creation, supplements and no reels after waking. It's built for **fast logging** and **weekly consistency**, not streaks. The design reasoning is in [`docs/UX.md`](docs/UX.md).
 
-## So funktioniert's
+## Run it
 
-- **Jede Gewohnheit pflanzt einen Baum** (abwechselnd Fichte, Ahorn, Birke). Er wächst mit der Streak dieser Gewohnheit, vom Setzling bis zum uralten Baum, inklusive Wurzeln im Boden. Reißt die Streak, vertrocknet er.
-- **Punkte = Summe aller aktuellen Streaks.** Bei bestimmten Punkteständen zieht eine neue Tierart ein: Eichhörnchen, Schneeschuhhase, Biber, Rotfuchs, Eistaucher, Weißkopfseeadler, Weißwedelhirsch, Grauwolf, Wapiti (Elk), Schwarzbär, Elch (Moose), Grizzly – und zum Schluss Nordlichter.
-- **Tiere wachsen und bekommen Nachwuchs:** Jede Art kommt jung an und ist nach 4 weiteren Punkten ausgewachsen (Hirsche bekommen erst dann ihr Geweih). 8 Punkte nach dem Einzug kommt das erste Junge, nach 18 Punkten das zweite. Die Jungen laufen den Eltern hinterher und werden selbst groß. Adlerküken sitzen im Nest auf deinem höchsten Baum, Eistaucher-Küken reiten auf dem Rücken der Eltern.
-- **Reißt eine Streak**, sinken die Punkte, und Tiere ziehen wieder weg.
+```bash
+npm install
+npm run dev          # http://localhost:5173
+npm test             # domain logic tests (sleep rhythm, weekly counts, day rollover)
+npm run build        # static site in dist/ (deploy to Vercel, Netlify or GitHub Pages)
+npm run build:single # one self-contained HTML file in dist-single/
+```
 
-## Die Welt
+On the phone, open the deployed URL and choose **Add to Home Screen**. The app then runs full-screen like a native app.
 
-- Echte **Tageszeit** (Sonne, Mond, Sterne, Glühwürmchen, Nordlichter nachts) und echte **Jahreszeit**: rote Ahornblätter und Kanadagänse im Herbst, Schnee im Winter, zugefrorener See, weiße Schneehasen, Bären im Winterschlaf im Bau unter der Erde, Eistaucher sind im Winter im Süden.
-- Die Welt ist breiter als der Bildschirm: **ziehen** oder die Pfeile benutzen. **Tippe** auf Tiere oder Bäume für Infos.
-- **Vorschau**-Regler: zeigt die Welt bei beliebig vielen Punkten. Tageszeit und Jahreszeit lassen sich zum Anschauen umschalten.
+## Stack and structure
 
-## Starten
+React 18 + TypeScript + Vite. There's no backend yet: data is saved in `localStorage` behind a small store interface.
 
-Einfach `index.html` im Browser öffnen. Keine Installation, kein Build.
-Daten werden lokal im Browser gespeichert (`localStorage`). Unter „Daten sichern“ kannst du ein Backup kopieren und auf einem anderen Gerät einfügen.
+```
+src/
+  lib/          date + clock helpers (local days, 4:00 rollover, Monday weeks)
+  domain/       types, defaults, habit definitions, sleep evaluation, stats   ← pure, tested
+  data/         DataStore interface, LocalStore, React StoreProvider
+  components/   UI primitives (Sheet, Chips, Stepper, Switch, Ring, Toast)
+  sheets/       the fast logging sheets, one per habit type
+  views/        Today, Week, Month, Settings
+supabase/schema.sql   tables + row-level security for cloud sync later
+legacy/               the earlier pixel-forest prototype
+```
 
-Tipp fürs Handy: Über GitHub Pages hosten und dann „Zum Home-Bildschirm hinzufügen“.
+### Data model
+
+Every log is an `Entry`: `date`, `habit`, `subtype`, `detail`, `durationMin`, `value`, `state` (`done | partial | rest | skipped`), `note`, `data` (sleep times, supplements taken). Multiple entries per habit per day are allowed. Weekly targets count **days**. States that depend on settings (sleep tolerance, Spanish minimum, supplement list) are recomputed on read, so changing a setting updates history consistently.
+
+### Adding Supabase later
+
+1. Create a Supabase project and run `supabase/schema.sql`.
+2. `npm i @supabase/supabase-js`, then write `src/data/supabaseStore.ts` implementing `DataStore` (`load`, `upsertEntry`, `deleteEntry`, `setNote`, `saveSettings`, `replaceAll`). Map `durationMin` ↔ `duration_min`.
+3. Add a sign-in screen (magic link is enough) and swap the one line in `StoreProvider.tsx`:
+   `const store: DataStore = new LocalStore();`
+4. Import your existing data once via **Settings → Data → Restore** with a local backup.
+
+## Backups
+
+All data is stored on the device. Use **Settings → Data → Download backup** now and then, and always before switching phones or clearing the browser.
