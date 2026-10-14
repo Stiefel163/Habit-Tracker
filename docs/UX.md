@@ -13,6 +13,14 @@
 - **Nothing is punished.** A missed day is just a small tree. There are no streaks to lose and no red states.
 - **Fun without noise.** The tree and its fruits animate as they grow, the full tree sways gently, and there's one short message for a full tree or a reached goal. Each goal unlocks an animal: Grizzly, Beaver, Wolf, Parrot, Moose, Fox, Eagle, Owl, Squirrel and Hare.
 
+## What we count, and why (research)
+
+- **Measure only what tells you where you stand.** In a meta-analysis of 138 experiments, monitoring progress improved goal attainment (d ≈ 0.40), especially when progress was physically recorded (Harkin et al., 2016). So the two things with a real finish line get numbers:
+  - **Bögen** (practice sheets), with passed / not passed. Passing means ≤ 10 error points in the class B exam, so "passed of your last 10" is a direct readiness signal.
+  - **Study time**, as quick blocks. Blocks give minutes *and* sessions with one tap, and there's no timer to start.
+- Everything else stays a single check, because a number wouldn't change what you do next.
+- **Morning lock-in is an if-then plan.** "When I wake up → out of bed → breakfast → start something" is an implementation intention, which has a medium-to-large effect on goal attainment (d ≈ 0.65, Gollwitzer & Sheeran, 2006). It stays separate from sleep: good sleep makes getting up easier, but the lock-in is about what you do in the first hour.
+
 ## Screens
 
 | Tab | Job |

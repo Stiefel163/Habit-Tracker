@@ -2,12 +2,19 @@
 
 A personal, mobile-first habit tracker for an exchange semester. You only track **done or not done**, and each check grows **today's tree**.
 
-- **Today:** 7 habits, one tap each. Training lets you pick Gym, Swimming or your own sports (Volleyball, Hiking …). Create lets you pick "worked on content" and/or "published a video". Each check moves the tree through 6 stages (seed → sprout → sapling → young tree → tree → full tree with blossoms) and hangs a fruit in that habit's color.
+- **Today:** 8 habits. Most are one tap; a few ask one quick thing:
+  - **Training:** pick Gym, Swimming or your own sports (Volleyball, Hiking …).
+  - **Study:** add blocks of 15 / 30 / 45 / 60 / 90 / 120 min. They add up, so you get both time and number of sessions.
+  - **Driving theory:** after each practice sheet (Bogen), tap **Passed** or **Not passed**. You see sheets today, the total, and how many of your last 10 you passed.
+  - **Create:** "worked on content" and/or "published a video".
+  - **Morning lock-in:** an if-then routine. When you wake up: out of bed → breakfast → start something productive, with no scrolling.
+
+  Each habit done moves the tree through 6 stages (seed → sprout → sapling → young tree → tree → full tree with blossoms) and hangs a fruit in that habit's color.
 - **Forest:** every day becomes a tree in a monthly calendar, sized by how much you did. Tap a day to fix it.
 - **Goals:** semester goals (e.g. 36× Gym, 10× Swimming, 8 videos published) with progress bars. Each goal you reach brings an animal to your forest.
 - **Settings:** turn habits on/off, manage your sports, change goal numbers, and back up your data.
 
-There are no times, no streaks and no red "failed" states. The design notes are in [`docs/UX.md`](docs/UX.md).
+Only study time and Bögen are counted; everything else is done or not done. There are no streaks and no red "failed" states. The design notes are in [`docs/UX.md`](docs/UX.md).
 
 ## Run it
 
@@ -36,7 +43,7 @@ supabase/schema.sql  table for cloud sync later
 legacy/              the earlier pixel-forest prototype
 ```
 
-**Data model:** `days["2025-10-08"] = { training: ["gym", "sport:Volleyball"], spanish: ["done"], create: ["published"] }`. A habit is done when its list isn't empty. Data from the first, more detailed version is migrated automatically.
+**Data model:** `days["2025-10-08"] = { training: ["gym", "sport:Volleyball"], study: ["45", "30"], driving: ["pass", "fail"], spanish: ["done"], create: ["published"] }`. A habit is done when its list isn't empty. Data from the first, more detailed version is migrated automatically.
 
 **Adding Supabase later:** run `supabase/schema.sql`, implement `DataStore` (`load`, `save`) with `@supabase/supabase-js`, add a magic-link sign-in, and swap the one line in `StoreProvider.tsx`.
 

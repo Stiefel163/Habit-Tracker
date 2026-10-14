@@ -4,10 +4,10 @@ export const DEFAULT_SETTINGS: Settings = {
   version: 2,
   appearance: "system",
   dayStartHour: 4,
-  active: { sleep: true, training: true, spanish: true, driving: true, create: true, supplements: true, noReels: true },
+  active: { sleep: true, noReels: true, training: true, study: true, spanish: true, driving: true, create: true, supplements: true },
   sports: ["Volleyball"],
   // Sized for the rest of the exchange (roughly Oct–Dec).
-  goals: { gym: 36, swim: 10, sport: 8, spanish: 45, driving: 40, create: 30, published: 8, sleep: 60, supplements: 70, noReels: 60 },
+  goals: { gym: 36, swim: 10, sport: 8, studyHours: 100, spanish: 45, driving: 60, create: 30, published: 8, sleep: 60, supplements: 70, noReels: 60 },
 };
 
 export function emptyData(): AppData {

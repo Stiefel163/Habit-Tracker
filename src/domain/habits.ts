@@ -6,18 +6,24 @@ export interface HabitDef {
   icon: string;
   hint: string; // what "done" means, shown under the name
   color: string; // fruit color on the tree (never the only signal: rows also show text + check)
-  choice?: boolean; // opens a small picker instead of toggling
+  /** check: one tap toggles · choice: pick what you did · minutes: add study blocks · sheets: count Bögen */
+  kind: "check" | "choice" | "minutes" | "sheets";
 }
 
 export const HABITS: HabitDef[] = [
-  { id: "sleep", name: "Good sleep", icon: "🌙", hint: "Bed ~23:00, up ~07:00", color: "#9b8cff" },
-  { id: "training", name: "Training", icon: "🏋️", hint: "Gym, swim or any sport", color: "#ff9f43", choice: true },
-  { id: "spanish", name: "Spanish", icon: "🇪🇸", hint: "Any session counts", color: "#ffd23f" },
-  { id: "driving", name: "Driving theory", icon: "🚗", hint: "Any session counts", color: "#4fa3ff" },
-  { id: "create", name: "Create", icon: "🎬", hint: "Edit, film, write, post", color: "#ff5d8f", choice: true },
-  { id: "supplements", name: "Supplements", icon: "💊", hint: "Your daily set", color: "#5ee0b5" },
-  { id: "noReels", name: "No reels after waking", icon: "📵", hint: "Out of bed before scrolling", color: "#c7f464" },
+  { id: "sleep", name: "Good sleep", icon: "🌙", hint: "Bed ~23:00, up ~07:00", color: "#9b8cff", kind: "check" },
+  { id: "noReels", name: "Morning lock-in", icon: "☀️", hint: "Up, breakfast, start. No scrolling", color: "#c7f464", kind: "check" },
+  { id: "training", name: "Training", icon: "🏋️", hint: "Gym, swim or any sport", color: "#ff9f43", kind: "choice" },
+  { id: "study", name: "Study", icon: "📚", hint: "Add your study time", color: "#f4a6ff", kind: "minutes" },
+  { id: "spanish", name: "Spanish", icon: "🇪🇸", hint: "Any session counts", color: "#ffd23f", kind: "check" },
+  { id: "driving", name: "Driving theory", icon: "🚗", hint: "Count your practice sheets (Bögen)", color: "#4fa3ff", kind: "sheets" },
+  { id: "create", name: "Create", icon: "🎬", hint: "Edit, film, write, post", color: "#ff5d8f", kind: "choice" },
+  { id: "supplements", name: "Supplements", icon: "💊", hint: "Your daily set", color: "#5ee0b5", kind: "check" },
 ];
+
+export const STUDY_BLOCKS = [15, 30, 45, 60, 90, 120];
+/** German theory exam (class B): ≤10 error points passes. */
+export const SHEET_PASS_RULE = "≤ 10 error points";
 
 export const HABIT_BY_ID = Object.fromEntries(HABITS.map((h) => [h.id, h])) as Record<HabitId, HabitDef>;
 
@@ -47,11 +53,12 @@ export const GOALS: GoalDef[] = [
   { id: "swim", habit: "training", label: "Swimming", unit: "swims", animal: "🦫", animalName: "Beaver" },
   { id: "sport", habit: "training", label: "Other sports", unit: "games", animal: "🐺", animalName: "Wolf" },
   { id: "spanish", habit: "spanish", label: "Spanish", unit: "days", animal: "🦜", animalName: "Parrot" },
-  { id: "driving", habit: "driving", label: "Driving theory", unit: "days", animal: "🫎", animalName: "Moose" },
+  { id: "studyHours", habit: "study", label: "Study hours", unit: "hours", animal: "🐢", animalName: "Turtle" },
+  { id: "driving", habit: "driving", label: "Practice sheets", unit: "sheets", animal: "🫎", animalName: "Moose" },
   { id: "create", habit: "create", label: "Create", unit: "days", animal: "🦊", animalName: "Fox" },
   { id: "published", habit: "create", label: "Videos published", unit: "videos", animal: "🦅", animalName: "Eagle" },
   { id: "sleep", habit: "sleep", label: "Good sleep", unit: "nights", animal: "🦉", animalName: "Owl" },
-  { id: "noReels", habit: "noReels", label: "Reel-free mornings", unit: "mornings", animal: "🐿️", animalName: "Squirrel" },
+  { id: "noReels", habit: "noReels", label: "Lock-in mornings", unit: "mornings", animal: "🐿️", animalName: "Squirrel" },
   { id: "supplements", habit: "supplements", label: "Supplements", unit: "days", animal: "🐇", animalName: "Hare" },
 ];
 

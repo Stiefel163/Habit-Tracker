@@ -1,9 +1,13 @@
 import { useStore } from "../data/StoreProvider";
-import { goalStates } from "../domain/progress";
+import { formatMin, goalStates, sheetStats, studyTotals } from "../domain/progress";
+import { weekDays, weekStart, type DayKey } from "../lib/date";
 
-export function GoalsView() {
+export function GoalsView({ today }: { today: DayKey }) {
   const { data } = useStore();
+  const s = data.settings;
   const goals = goalStates(data);
+  const week = studyTotals(data.days, weekDays(weekStart(today)));
+  const sheets = sheetStats(data.days);
   const reached = goals.filter((g) => g.reached).length;
 
   return (
@@ -16,6 +20,25 @@ export function GoalsView() {
           </p>
         </div>
       </header>
+
+      {(s.active.study || s.active.driving) && (
+        <section className="stats two">
+          {s.active.study && (
+            <div>
+              <span className="big">{formatMin(week.min)}</span>
+              <span className="muted small">studied this week · {week.blocks} blocks</span>
+            </div>
+          )}
+          {s.active.driving && (
+            <div>
+              <span className="big">{sheets.total}</span>
+              <span className="muted small">
+                Bögen total{sheets.recent ? ` · last ${sheets.recent}: ${sheets.recentPassed} passed` : ""}
+              </span>
+            </div>
+          )}
+        </section>
+      )}
 
       <ul className="goals">
         {goals.map((g) => {

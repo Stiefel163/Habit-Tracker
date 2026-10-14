@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Sheet } from "../components/Sheet";
 import { Tree } from "../components/Tree";
 import { useStore } from "../data/StoreProvider";
-import { CREATE_OPTIONS, SPORT_PREFIX, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
-import { STAGES, activeHabits, dayProgress, isDone, stageOf } from "../domain/progress";
+import { CREATE_OPTIONS, SHEET_PASS_RULE, SPORT_PREFIX, STUDY_BLOCKS, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
+import { STAGES, activeHabits, dayProgress, formatMin, isDone, sheetStats, sheetsOf, stageOf, studyMinutes, studyTotals } from "../domain/progress";
+import type { DayLog } from "../domain/types";
 import type { HabitId } from "../domain/types";
 import { formatLong, relativeLabel, weekDays, weekStart, weekdayShort, fromKey, type DayKey } from "../lib/date";
 
@@ -18,8 +19,8 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
   const left = total - done;
 
   const tap = (h: HabitDef) => {
-    if (h.choice) setPicker(h.id);
-    else setHabit(date, h.id, isDone(log, h.id) ? [] : ["done"]);
+    if (h.kind === "check") setHabit(date, h.id, isDone(log, h.id) ? [] : ["done"]);
+    else setPicker(h.id);
   };
 
   return (
@@ -54,16 +55,16 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
       <ul className="habits">
         {activeHabits(s).map((h) => {
           const on = isDone(log, h.id);
-          const items = log?.[h.id] ?? [];
-          const sub = on && h.choice ? items.map(activityLabel).join(" + ") : h.hint;
+          const sub = on ? doneLine(h, log) ?? h.hint : h.hint;
+          const opens = h.kind !== "check";
           return (
             <li key={h.id}>
               <button
                 className={`habit${on ? " on" : ""}`}
                 onClick={() => tap(h)}
-                aria-pressed={h.choice ? undefined : on}
-                aria-haspopup={h.choice ? "dialog" : undefined}
-                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && h.choice ? `, ${sub}` : ""}`}
+                aria-pressed={opens ? undefined : on}
+                aria-haspopup={opens ? "dialog" : undefined}
+                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && opens ? `, ${sub}` : ""}`}
               >
                 <span className="habit-icon" aria-hidden="true">
                   {h.icon}
@@ -85,8 +86,30 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
 
       {picker === "training" && <TrainingPicker date={date} onClose={() => setPicker(null)} />}
       {picker === "create" && <CreatePicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "study" && <StudyPicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "driving" && <SheetsPicker date={date} onClose={() => setPicker(null)} />}
     </div>
   );
+}
+
+/** The line under a done habit: what you actually did. */
+function doneLine(h: HabitDef, log: DayLog | undefined): string | null {
+  switch (h.kind) {
+    case "choice":
+      return (log?.[h.id] ?? []).map(activityLabel).join(" + ");
+    case "minutes": {
+      const n = log?.study?.length ?? 0;
+      return `${formatMin(studyMinutes(log))} · ${n} ${n === 1 ? "block" : "blocks"}`;
+    }
+    case "sheets": {
+      const s = sheetsOf(log);
+      if (!s.length) return "Studied";
+      const passed = s.filter((x) => x === "pass").length;
+      return `${s.length} ${s.length === 1 ? "sheet" : "sheets"} · ${passed} passed`;
+    }
+    default:
+      return null;
+  }
 }
 
 function WeekStrip({ date, today, setDate }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void }) {
@@ -182,6 +205,107 @@ function CreatePicker({ date, onClose }: { date: DayKey; onClose: () => void }) 
   return (
     <Sheet title="Create" onClose={onClose}>
       <ChoiceList options={CREATE_OPTIONS} selected={selected} onToggle={toggle} />
+    </Sheet>
+  );
+}
+
+function StudyPicker({ date, onClose }: { date: DayKey; onClose: () => void }) {
+  const { data, setHabit } = useStore();
+  const blocks = data.days[date]?.study ?? [];
+  const week = studyTotals(data.days, weekDays(weekStart(date)));
+  const add = (m: number) => setHabit(date, "study", [...blocks, String(m)]);
+  const remove = (i: number) => setHabit(date, "study", blocks.filter((_, j) => j !== i));
+  return (
+    <Sheet title="Study" onClose={onClose}>
+      <div className="sum" aria-live="polite">
+        <span className="sum-big">{formatMin(studyMinutes(data.days[date]))}</span>
+        <span className="muted">today · {formatMin(week.min)} this week</span>
+      </div>
+      <p className="muted small">Tap once per study block. Blocks add up.</p>
+      <div className="blocks">
+        {STUDY_BLOCKS.map((m) => (
+          <button key={m} className="block-btn" onClick={() => add(m)} aria-label={`Add ${m} minutes`}>
+            +{m}
+            <span>min</span>
+          </button>
+        ))}
+      </div>
+      {blocks.length > 0 && (
+        <ul className="logged">
+          {blocks.map((b, i) => (
+            <li key={i}>
+              <span>Block {i + 1} · {b} min</span>
+              <button className="text-btn" onClick={() => remove(i)} aria-label={`Remove block ${i + 1}, ${b} minutes`}>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Sheet>
+  );
+}
+
+function SheetsPicker({ date, onClose }: { date: DayKey; onClose: () => void }) {
+  const { data, setHabit } = useStore();
+  const items = data.days[date]?.driving ?? [];
+  const today = sheetsOf(data.days[date]);
+  const all = sheetStats(data.days);
+  const add = (r: "pass" | "fail") => setHabit(date, "driving", [...items.filter((x) => x === "pass" || x === "fail"), r]);
+  const undo = () => {
+    const idx = items.map((x) => x === "pass" || x === "fail").lastIndexOf(true);
+    if (idx >= 0) setHabit(date, "driving", items.filter((_, j) => j !== idx));
+  };
+  const studiedOnly = items.length > 0 && today.length === 0;
+  return (
+    <Sheet title="Driving theory" onClose={onClose}>
+      <div className="sum" aria-live="polite">
+        <span className="sum-big">
+          {today.length} {today.length === 1 ? "sheet" : "sheets"}
+        </span>
+        <span className="muted">
+          today · {today.filter((x) => x === "pass").length} passed
+        </span>
+      </div>
+      <p className="muted small">After each practice sheet (Bogen), tap the result. Passed = {SHEET_PASS_RULE}.</p>
+      <div className="sheet-btns">
+        <button className="result pass" onClick={() => add("pass")}>
+          <span aria-hidden="true">✓</span> Passed
+        </button>
+        <button className="result fail" onClick={() => add("fail")}>
+          <span aria-hidden="true">✗</span> Not passed
+        </button>
+      </div>
+      {today.length > 0 && (
+        <p className="sheet-dots" aria-label={`Today: ${today.map((x) => (x === "pass" ? "passed" : "not passed")).join(", ")}`}>
+          {today.map((x, i) => (
+            <span key={i} className={x} aria-hidden="true">
+              {x === "pass" ? "✓" : "✗"}
+            </span>
+          ))}
+          <button className="text-btn" onClick={undo}>
+            Undo last
+          </button>
+        </p>
+      )}
+      <div className="readiness">
+        <div>
+          <span className="sum-mid">{all.total}</span>
+          <span className="muted small">sheets total</span>
+        </div>
+        <div>
+          <span className="sum-mid">{all.recent ? `${all.recentPassed}/${all.recent}` : "–"}</span>
+          <span className="muted small">passed of your last {all.recent || 10}</span>
+        </div>
+      </div>
+      <button
+        className={`studied${studiedOnly ? " on" : ""}`}
+        aria-pressed={studiedOnly}
+        onClick={() => setHabit(date, "driving", studiedOnly ? [] : today.length ? items : ["done"])}
+        disabled={today.length > 0}
+      >
+        {studiedOnly ? "✓ " : ""}Studied without a full sheet
+      </button>
     </Sheet>
   );
 }

@@ -132,7 +132,7 @@ function Shell() {
             }}
           />
         )}
-        {tab === "goals" && <GoalsView />}
+        {tab === "goals" && <GoalsView today={today} />}
         {tab === "settings" && <SettingsView />}
       </main>
       <nav className="tabbar" aria-label="Sections">
