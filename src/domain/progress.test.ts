@@ -8,16 +8,16 @@ const s = DEFAULT_SETTINGS;
 
 describe("today's tree", () => {
   it("grows with each check", () => {
-    expect(dayProgress(undefined, s)).toMatchObject({ done: 0, total: 8, p: 0 });
+    expect(dayProgress(undefined, s)).toMatchObject({ done: 0, total: 9, p: 0 });
     const log = { spanish: ["done"], training: ["gym"], sleep: ["done"] };
     expect(dayProgress(log, s).done).toBe(3);
   });
   it("has 6 clear stages, full only when everything is done", () => {
-    expect([0, 1 / 8, 2 / 8, 4 / 8, 7 / 8, 1].map(stageOf)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect([0, 1 / 9, 3 / 9, 5 / 9, 8 / 9, 1].map(stageOf)).toEqual([0, 1, 2, 3, 4, 5]);
   });
   it("only counts active habits", () => {
     const off = { ...s, active: { ...s.active, driving: false, supplements: false } };
-    expect(dayProgress({ spanish: ["done"] }, off).total).toBe(6);
+    expect(dayProgress({ spanish: ["done"] }, off).total).toBe(7);
   });
 });
 
@@ -79,6 +79,6 @@ describe("study time and practice sheets", () => {
     expect(sheetStats(days)).toEqual({ total: 11, passed: 9, recent: 10, recentPassed: 9 });
   });
   it("Study and lock-in are part of today's tree", () => {
-    expect(dayProgress({ study: ["15"], noReels: ["done"] }, s)).toMatchObject({ done: 2, total: 8 });
+    expect(dayProgress({ study: ["15"], noReels: ["done"] }, s)).toMatchObject({ done: 2, total: 9 });
   });
 });

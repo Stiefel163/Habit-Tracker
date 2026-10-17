@@ -30,6 +30,7 @@ export function SettingsView() {
   const s = data.settings;
   const set = (patch: Partial<Settings>) => updateSettings((x) => ({ ...x, ...patch }));
   const [sport, setSport] = useState("");
+  const [line, setLine] = useState("");
   const [confirmErase, setConfirmErase] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const json = JSON.stringify(data);
@@ -39,6 +40,64 @@ export function SettingsView() {
       <header className="head">
         <h1>Settings</h1>
       </header>
+
+      <Section title="Who you're becoming" hint="Shown at the top of Lock in. Every check is a vote for this.">
+        <input
+          className="text-input"
+          value={s.identity}
+          onChange={(e) => set({ identity: e.target.value })}
+          aria-label="Identity statement"
+          maxLength={80}
+        />
+      </Section>
+
+      <Section title="Your fuel" hint="Lines that fire you up: lyrics, quotes, reminders. One shows each day.">
+        {s.fuel.map((f, i) => (
+          <div className="row" key={i}>
+            <span className="fuel-item">“{f}”</span>
+            <button className="text-btn" onClick={() => set({ fuel: s.fuel.filter((_, j) => j !== i) })} aria-label={`Remove line: ${f}`}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <form
+          className="add-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const t = line.trim();
+            if (t) set({ fuel: [...s.fuel, t] });
+            setLine("");
+          }}
+        >
+          <input className="text-input" value={line} onChange={(e) => setLine(e.target.value)} placeholder="Your favorite line" aria-label="New fuel line" maxLength={140} />
+          <button className="secondary" type="submit">
+            Add
+          </button>
+        </form>
+      </Section>
+
+      <Section title="Streak" hint="Keep it small, like Duolingo: a day counts when you reach this many checks.">
+        <div className="row">
+          <label htmlFor="daily-goal">Checks per streak day</label>
+          <div className="stepper">
+            <button type="button" aria-label="Fewer checks" onClick={() => set({ dailyGoal: Math.max(1, s.dailyGoal - 1) })}>
+              −
+            </button>
+            <input id="daily-goal" type="number" inputMode="numeric" min={1} max={9} value={s.dailyGoal} readOnly />
+            <button type="button" aria-label="More checks" onClick={() => set({ dailyGoal: Math.min(9, s.dailyGoal + 1) })}>
+              +
+            </button>
+          </div>
+        </div>
+        <div className="row">
+          <span>30-day reset {s.resetStart ? `· since ${s.resetStart}` : "· not started"}</span>
+          {s.resetStart && (
+            <button className="text-btn" onClick={() => set({ resetStart: undefined })}>
+              Stop
+            </button>
+          )}
+        </div>
+      </Section>
 
       <Section title="Habits" hint="Turn off what you don't need right now. Your history stays.">
         {HABITS.map((h) => (

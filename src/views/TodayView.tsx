@@ -4,12 +4,17 @@ import { Tree } from "../components/Tree";
 import { useStore } from "../data/StoreProvider";
 import { CREATE_OPTIONS, SHEET_PASS_RULE, SPORT_PREFIX, STUDY_BLOCKS, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
 import { STAGES, activeHabits, dayProgress, formatMin, isDone, sheetStats, sheetsOf, stageOf, studyMinutes, studyTotals } from "../domain/progress";
-import type { DayLog } from "../domain/types";
-import type { HabitId } from "../domain/types";
+import { computeStreak, fuelFor, missedYesterday } from "../domain/lockin";
+import type { DayLog, HabitId } from "../domain/types";
+import { reviewWeek } from "../components/LockIn";
+import { dayIndexInWeek } from "../lib/date";
 import { formatLong, relativeLabel, weekDays, weekStart, weekdayShort, fromKey, type DayKey } from "../lib/date";
 
-export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void }) {
+export function TodayView({ date, today, setDate, goLockIn }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void; goLockIn: () => void }) {
   const { data, setHabit } = useStore();
+  const streak = computeStreak(data, today);
+  const missed = date === today ? missedYesterday(data, date) : new Set<HabitId>();
+  const mirrorDue = date === today && [0, 5, 6].includes(dayIndexInWeek(today)) && !data.reviews[reviewWeek(today)];
   const s = data.settings;
   const log = data.days[date];
   const { done, total, p } = dayProgress(log, s);
@@ -30,12 +35,22 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
           <h1>{relativeLabel(date, today)}</h1>
           <p className="muted">{formatLong(date)}</p>
         </div>
-        {date !== today && (
+        {date !== today ? (
           <button className="pill-btn" onClick={() => setDate(today)}>
             Back to today
           </button>
+        ) : (
+          <button className={`flame-chip${streak.todayMet ? " lit" : ""}`} onClick={goLockIn} aria-label={`${streak.days} day streak. Open Lock in`}>
+            <span aria-hidden="true">🔥</span> {streak.days}
+          </button>
         )}
       </header>
+      {date === today && s.fuel.length > 0 && <p className="fuel-line">“{fuelFor(s.fuel, today)}”</p>}
+      {mirrorDue && (
+        <button className="mirror-prompt" onClick={goLockIn}>
+          🪞 Accountability mirror is due · 2 min ›
+        </button>
+      )}
 
       <section className={`tree-card stage-${stage}`} aria-live="polite">
         <Tree p={p} done={doneIds} label={`${STAGES[stage]}: ${done} of ${total} habits done`} />
@@ -57,6 +72,7 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
           const on = isDone(log, h.id);
           const sub = on ? doneLine(h, log) ?? h.hint : h.hint;
           const opens = h.kind !== "check";
+          const twice = !on && missed.has(h.id);
           return (
             <li key={h.id}>
               <button
@@ -64,13 +80,16 @@ export function TodayView({ date, today, setDate }: { date: DayKey; today: DayKe
                 onClick={() => tap(h)}
                 aria-pressed={opens ? undefined : on}
                 aria-haspopup={opens ? "dialog" : undefined}
-                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && opens ? `, ${sub}` : ""}`}
+                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && opens ? `, ${sub}` : ""}${twice ? ". Missed yesterday: don't miss twice" : ""}`}
               >
                 <span className="habit-icon" aria-hidden="true">
                   {h.icon}
                 </span>
                 <span className="habit-text">
-                  <span className="habit-name">{h.name}</span>
+                  <span className="habit-name">
+                    {h.name}
+                    {twice && <span className="twice">Don't miss twice</span>}
+                  </span>
                   <span className="habit-sub">{sub}</span>
                 </span>
                 <span className="check" aria-hidden="true" style={on ? { background: h.color, borderColor: h.color } : undefined}>

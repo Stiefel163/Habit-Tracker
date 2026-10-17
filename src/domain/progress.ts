@@ -25,7 +25,7 @@ export function stageOf(p: number): number {
 
 /** Counts toward each long-term goal across all days. */
 export function goalCounts(days: AppData["days"]): Record<GoalId, number> {
-  const c: Record<GoalId, number> = { gym: 0, swim: 0, sport: 0, studyHours: 0, spanish: 0, driving: 0, create: 0, published: 0, sleep: 0, supplements: 0, noReels: 0 };
+  const c: Record<GoalId, number> = { gym: 0, swim: 0, sport: 0, studyHours: 0, spanish: 0, driving: 0, create: 0, published: 0, sleep: 0, supplements: 0, noReels: 0, reelFree: 0 };
   let studyMin = 0;
   for (const log of Object.values(days)) {
     const t = log.training ?? [];
@@ -40,6 +40,7 @@ export function goalCounts(days: AppData["days"]): Record<GoalId, number> {
     if (isDone(log, "sleep")) c.sleep++;
     if (isDone(log, "supplements")) c.supplements++;
     if (isDone(log, "noReels")) c.noReels++;
+    if (isDone(log, "reelFree")) c.reelFree++;
   }
   c.studyHours = Math.floor(studyMin / 60);
   return c;

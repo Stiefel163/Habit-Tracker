@@ -21,6 +21,24 @@
 - Everything else stays a single check, because a number wouldn't change what you do next.
 - **Morning lock-in is an if-then plan.** "When I wake up → out of bed → breakfast → start something" is an implementation intention, which has a medium-to-large effect on goal attainment (d ≈ 0.65, Gollwitzer & Sheeran, 2006). It stays separate from sleep: good sleep makes getting up easier, but the lock-in is about what you do in the first hour.
 
+## Lock in: cutting cheap dopamine
+
+The core problem is being hooked on short-form video, not a lack of knowledge. The design follows the four laws from *Atomic Habits*, applied in both directions:
+
+| Law | Good habits | Reels (inverted) | In the app |
+|---|---|---|---|
+| Obvious | Minimum version under each habit, stacked on routines ("with breakfast") | Phone sleeps outside the bedroom | Phone setup checklist |
+| Attractive | Identity: "I'm someone who locks in", fuel lines, Kanye eras | | Lock in header |
+| Easy | 2-minute versions count fully | Friction: the one sec app (people cancelled 36% of openings and tried 37% less often over 6 weeks in a PNAS 2023 study), grayscale on triple-click | Setup |
+| Satisfying | Tree, streak, eras | Each beaten urge counts and turns into a rep | Urge flow, cookie jar |
+
+On top of that:
+- **Duolingo:** a small daily goal and a streak with earned freezes. That is "never miss twice" built into the streak instead of punishment.
+- **Goggins:** the 40% rule on the urge screen, the cookie jar, and the accountability mirror.
+- **Dopamine Nation:** a 30-day reset from the one specific "drug".
+- **The national-park insight:** when he was busy and offline he didn't miss the feed. So the urge flow offers concrete replacement actions, and the setup asks for one offline adventure a week.
+- **Instagram stays for posting and DMs.** He is a creator, so the rule is "no feed", not "no Instagram". The laptop stays work-only.
+
 ## Screens
 
 | Tab | Job |

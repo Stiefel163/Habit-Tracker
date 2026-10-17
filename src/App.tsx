@@ -7,8 +7,11 @@ import { ForestView } from "./views/ForestView";
 import { GoalsView } from "./views/GoalsView";
 import { SettingsView } from "./views/SettingsView";
 import { TodayView } from "./views/TodayView";
+import { LockInView } from "./views/LockInView";
+import { UrgeSheet } from "./components/LockIn";
+import { computeStreak } from "./domain/lockin";
 
-type Tab = "today" | "forest" | "goals" | "settings";
+type Tab = "today" | "lockin" | "forest" | "goals" | "settings";
 
 const ICON_PROPS = { viewBox: "0 0 24 24", "aria-hidden": true } as const;
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
@@ -19,6 +22,15 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
       <svg {...ICON_PROPS}>
         <path d="M12 21v-7" />
         <path d="M12 14c-4 0-6-3-6-6 3 0 6 2 6 6zM12 12c0-4 2.5-7 6.5-7 0 4-2.5 7-6.5 7z" />
+      </svg>
+    ),
+  },
+  {
+    id: "lockin",
+    label: "Lock in",
+    icon: (
+      <svg {...ICON_PROPS}>
+        <path d="M12 21c-4 0-7-2.7-7-6.6 0-3.4 2.4-5.4 3.8-7.4.4 1.8 1.3 2.8 2.4 3.3C11.7 7 12.6 4.6 14.6 3c.1 3 3.4 5.5 4.2 8.6.2.9.2 1.8.2 2.8C19 18.3 16 21 12 21z" />
       </svg>
     ),
   },
@@ -72,22 +84,24 @@ function useToday(dayStartHour: number): DayKey {
 }
 
 /** A short, friendly message when something is achieved. Nothing ever scolds. */
-function useCelebrations(date: DayKey) {
+function useCelebrations(date: DayKey, today: DayKey) {
   const { data, ready } = useStore();
   const toast = useToast();
   const reached = useMemo(() => goalStates(data).filter((g) => g.reached), [data]);
   const full = dayProgress(data.days[date], data.settings).p >= 1;
-  const prev = useRef<{ goals: string[]; full: boolean; date: DayKey } | null>(null);
+  const streak = useMemo(() => computeStreak(data, today), [data, today]);
+  const prev = useRef<{ goals: string[]; full: boolean; date: DayKey; met: boolean } | null>(null);
 
   useEffect(() => {
     if (!ready) return;
     const before = prev.current;
-    prev.current = { goals: reached.map((g) => g.id), full, date };
+    prev.current = { goals: reached.map((g) => g.id), full, date, met: streak.todayMet };
     if (!before) return;
     const fresh = reached.find((g) => !before.goals.includes(g.id));
     if (fresh) toast(`${fresh.animal} Goal reached: ${fresh.target}× ${fresh.label}! A ${fresh.animalName.toLowerCase()} moved into your forest.`);
     else if (full && !before.full && before.date === date) toast("🌳 Full tree! Everything done today.");
-  }, [reached, full, date, ready, toast]);
+    else if (streak.todayMet && !before.met) toast(`🔥 ${streak.days}-day streak. Stay hard.`);
+  }, [reached, full, date, ready, toast, streak]);
 }
 
 function Shell() {
@@ -96,7 +110,25 @@ function Shell() {
   const today = useToday(s.dayStartHour);
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState<DayKey>(today);
-  useCelebrations(date);
+  const [urge, setUrge] = useState(false);
+  useCelebrations(date, today);
+
+  // Deep link: an iOS Shortcut can open “…#urge” whenever Instagram is opened.
+  useEffect(() => {
+    const check = () => {
+      if (window.location.hash === "#urge") {
+        setUrge(true);
+        try {
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+        } catch {
+          // Some embedded viewers block history changes; the sheet still opens.
+        }
+      }
+    };
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
 
   // Follow the calendar when the day rolls over, unless you're looking at a past day on purpose.
   const [lastToday, setLastToday] = useState(today);
@@ -122,7 +154,17 @@ function Shell() {
   return (
     <>
       <main className="main" id="main">
-        {tab === "today" && <TodayView date={date} today={today} setDate={setDate} />}
+        {tab === "today" && <TodayView date={date} today={today} setDate={setDate} goLockIn={() => go("lockin")} />}
+        {tab === "lockin" && (
+          <LockInView
+            today={today}
+            onUrge={() => setUrge(true)}
+            openDay={(d) => {
+              setDate(d);
+              go("today");
+            }}
+          />
+        )}
         {tab === "forest" && (
           <ForestView
             today={today}
@@ -143,6 +185,7 @@ function Shell() {
           </button>
         ))}
       </nav>
+      {urge && <UrgeSheet date={today} onClose={() => setUrge(false)} />}
     </>
   );
 }

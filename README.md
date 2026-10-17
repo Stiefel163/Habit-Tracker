@@ -10,6 +10,15 @@ A personal, mobile-first habit tracker for an exchange semester. You only track 
   - **Morning lock-in:** an if-then routine. When you wake up: out of bed → breakfast → start something productive, with no scrolling.
 
   Each habit done moves the tree through 6 stages (seed → sprout → sapling → young tree → tree → full tree with blossoms) and hangs a fruit in that habit's color.
+- **Lock in:** built for cutting cheap dopamine (Reels/TikTok) with *Atomic Habits*, David Goggins and Duolingo mechanics:
+  - **Streak with freezes:** a day counts at 3 checks (configurable). Every 7 days earns a ❄️ that saves one missed day, so only missing twice breaks it.
+  - **30-day reset:** reel-free days out of 30 (*Dopamine Nation*). A slip doesn't reset you to zero.
+  - **"I feel the urge to scroll":** turn the urge into a rep (15-min study block, one Bogen, Spanish lesson, push-ups, walk, cold shower or a 10-minute wait). Study, Bogen and Spanish also log the habit. Opening `…#urge` jumps straight here, so an iOS Shortcut can send you here whenever Instagram opens.
+  - **Cookie jar** (Goggins): automatic wins (urges beaten, full trees, Bögen passed, goals) plus your own.
+  - **Accountability mirror:** a 2-minute review Saturday to Monday. Your "one change" shows during the next week.
+  - **Phone setup:** a one-time checklist (charger outside the bedroom, the one sec app for Instagram, grayscale on triple-click with auto-off for the camera, focus mode, one offline adventure a week).
+  - **Identity, fuel and eras:** "I'm someone who locks in", a daily line of your own fuel (add your favorite lyrics in Settings), and eras named after Kanye's albums from *The College Dropout* to *Donda*, unlocked by votes (checks + urges beaten).
+  - On Today: a 🔥 chip, your fuel line, minimum ("2-minute") versions under each habit, and a "Don't miss twice" tag on anything you skipped yesterday.
 - **Forest:** every day becomes a tree in a monthly calendar, sized by how much you did. Tap a day to fix it.
 - **Goals:** semester goals (e.g. 36× Gym, 10× Swimming, 8 videos published) with progress bars. Each goal you reach brings an animal to your forest.
 - **Settings:** turn habits on/off, manage your sports, change goal numbers, and back up your data.

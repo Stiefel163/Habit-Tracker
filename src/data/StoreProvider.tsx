@@ -11,6 +11,8 @@ interface StoreApi {
   /** Set what was done for one habit on one day. An empty list means "not done". */
   setHabit(date: DayKey, habit: HabitId, items: string[]): void;
   updateSettings(fn: (s: Settings) => Settings): void;
+  /** Any other change (urges, wins, reviews). */
+  update(fn: (d: AppData) => AppData): void;
   replaceAll(d: AppData): void;
 }
 
@@ -52,9 +54,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const updateSettings = useCallback((fn: (s: Settings) => Settings) => commit({ ...ref.current, settings: fn(ref.current.settings) }), [commit]);
+  const update = useCallback((fn: (d: AppData) => AppData) => commit(fn(ref.current)), [commit]);
   const replaceAll = useCallback((d: AppData) => commit(d), [commit]);
 
-  const api = useMemo(() => ({ data, ready, setHabit, updateSettings, replaceAll }), [data, ready, setHabit, updateSettings, replaceAll]);
+  const api = useMemo(
+    () => ({ data, ready, setHabit, updateSettings, update, replaceAll }),
+    [data, ready, setHabit, updateSettings, update, replaceAll],
+  );
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
 
