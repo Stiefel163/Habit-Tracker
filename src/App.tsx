@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ToastProvider, useToast } from "./components/Toast";
 import { StoreProvider, useStore } from "./data/StoreProvider";
-import { dayProgress, goalStates } from "./domain/progress";
 import { appToday, type DayKey } from "./lib/date";
 import { ForestView } from "./views/ForestView";
-import { GoalsView } from "./views/GoalsView";
 import { SettingsView } from "./views/SettingsView";
 import { TodayView } from "./views/TodayView";
-import { LockInView } from "./views/LockInView";
-import { UrgeSheet } from "./components/LockIn";
-import { computeStreak } from "./domain/lockin";
+import { UrgeSheet } from "./components/Urge";
+import { computeStreak, eraOf, lockedInDays } from "./domain/focus";
 
-type Tab = "today" | "lockin" | "forest" | "goals" | "settings";
+type Tab = "today" | "forest" | "settings";
 
 const ICON_PROPS = { viewBox: "0 0 24 24", "aria-hidden": true } as const;
 const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
@@ -26,32 +23,14 @@ const TABS: { id: Tab; label: string; icon: JSX.Element }[] = [
     ),
   },
   {
-    id: "lockin",
-    label: "Lock in",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path d="M12 21c-4 0-7-2.7-7-6.6 0-3.4 2.4-5.4 3.8-7.4.4 1.8 1.3 2.8 2.4 3.3C11.7 7 12.6 4.6 14.6 3c.1 3 3.4 5.5 4.2 8.6.2.9.2 1.8.2 2.8C19 18.3 16 21 12 21z" />
-      </svg>
-    ),
-  },
-  {
     id: "forest",
-    label: "Forest",
+    label: "Progress",
     icon: (
       <svg {...ICON_PROPS}>
         <circle cx="8" cy="9" r="4.5" />
         <path d="M8 13.5V20" />
         <circle cx="16.5" cy="11" r="3.5" />
         <path d="M16.5 14.5V20M4 20h16" />
-      </svg>
-    ),
-  },
-  {
-    id: "goals",
-    label: "Goals",
-    icon: (
-      <svg {...ICON_PROPS}>
-        <path d="M6 21V4M6 4h11l-2.5 4L17 12H6" />
       </svg>
     ),
   },
@@ -83,25 +62,22 @@ function useToday(dayStartHour: number): DayKey {
   return today;
 }
 
-/** A short, friendly message when something is achieved. Nothing ever scolds. */
-function useCelebrations(date: DayKey, today: DayKey) {
+/** A short message when you lock in or reach a new era. Nothing ever scolds. */
+function useCelebrations(today: DayKey) {
   const { data, ready } = useStore();
   const toast = useToast();
-  const reached = useMemo(() => goalStates(data).filter((g) => g.reached), [data]);
-  const full = dayProgress(data.days[date], data.settings).p >= 1;
   const streak = useMemo(() => computeStreak(data, today), [data, today]);
-  const prev = useRef<{ goals: string[]; full: boolean; date: DayKey; met: boolean } | null>(null);
+  const era = useMemo(() => eraOf(lockedInDays(data, today)).index, [data, today]);
+  const prev = useRef<{ met: boolean; era: number } | null>(null);
 
   useEffect(() => {
     if (!ready) return;
     const before = prev.current;
-    prev.current = { goals: reached.map((g) => g.id), full, date, met: streak.todayMet };
+    prev.current = { met: streak.todayMet, era };
     if (!before) return;
-    const fresh = reached.find((g) => !before.goals.includes(g.id));
-    if (fresh) toast(`${fresh.animal} Goal reached: ${fresh.target}× ${fresh.label}! A ${fresh.animalName.toLowerCase()} moved into your forest.`);
-    else if (full && !before.full && before.date === date) toast("🌳 Full tree! Everything done today.");
-    else if (streak.todayMet && !before.met) toast(`🔥 ${streak.days}-day streak. Stay hard.`);
-  }, [reached, full, date, ready, toast, streak]);
+    if (era > before.era) toast(`New era: ${eraOf(lockedInDays(data, today)).era.name}. Stay hard.`);
+    else if (streak.todayMet && !before.met) toast(`🔥 Locked in. ${streak.days}-day streak.`);
+  }, [streak, era, ready, toast, data, today]);
 }
 
 function Shell() {
@@ -111,7 +87,7 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("today");
   const [date, setDate] = useState<DayKey>(today);
   const [urge, setUrge] = useState(false);
-  useCelebrations(date, today);
+  useCelebrations(today);
 
   // Deep link: an iOS Shortcut can open “…#urge” whenever Instagram is opened.
   useEffect(() => {
@@ -154,17 +130,7 @@ function Shell() {
   return (
     <>
       <main className="main" id="main">
-        {tab === "today" && <TodayView date={date} today={today} setDate={setDate} goLockIn={() => go("lockin")} />}
-        {tab === "lockin" && (
-          <LockInView
-            today={today}
-            onUrge={() => setUrge(true)}
-            openDay={(d) => {
-              setDate(d);
-              go("today");
-            }}
-          />
-        )}
+        {tab === "today" && <TodayView date={date} today={today} setDate={setDate} onUrge={() => setUrge(true)} />}
         {tab === "forest" && (
           <ForestView
             today={today}
@@ -174,7 +140,6 @@ function Shell() {
             }}
           />
         )}
-        {tab === "goals" && <GoalsView today={today} />}
         {tab === "settings" && <SettingsView />}
       </main>
       <nav className="tabbar" aria-label="Sections">

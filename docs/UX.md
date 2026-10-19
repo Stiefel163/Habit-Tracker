@@ -1,17 +1,17 @@
 # Comeback: UX decisions
 
-**The goal:** track whether I did it, and see progress in a fun way. It should be dead simple, accessible and quick.
+## The latest lesson: lean beats complete
 
-## The one rule
+On October 19 he said, honestly: *"Right now I live with none of these habits. Exams next week. The other things are all extras that take far too much effort. You're connecting too many things at once."* Nine daily checks, four progress systems and a weekly form are a plan for a person who already has habits. For someone starting from zero, they're a wall.
 
-**Each check grows today's tree.** 0 checks is a seed, all checks is a full tree with blossoms. Every habit you do hangs a fruit in its color, so the tree also shows *what* you did. The card next to it says it in words: "4 / 7 · Young tree · 3 more checks for a full tree".
+So the app now works like this:
 
-## Why it looks like this
-
-- **No times, no detail forms.** Every habit is one tap, done or not done. Training and Create open a short list (Gym / Swimming / your sports; Worked on content / Published a video), because those choices feed the goals.
-- **Daily feedback, long-term meaning.** The tree answers "how's today going?". The Forest calendar answers "how did this month go?". Goals answer "am I getting there by December?".
-- **Nothing is punished.** A missed day is just a small tree. There are no streaks to lose and no red states.
-- **Fun without noise.** The tree and its fruits animate as they grow, the full tree sways gently, and there's one short message for a full tree or a reached goal. Each goal unlocks an animal: Grizzly, Beaver, Wolf, Parrot, Moose, Fox, Eagle, Owl, Squirrel and Hare.
+1. **Modes (seasons) set the focus.** Only 2–4 habits are visible on Today; everything else is paused, not failed. Exam mode is study + sleep + clean day. Build mode is morning lock-in + training + study. Off-grid is clean day + training.
+2. **One daily question:** *Did I lock in?* (all focus done).
+3. **One progress system:** the tree for today, Kanye eras as the level (one step per locked-in day) and the streak with freezes. Goals and animals are removed; he said they didn't move him.
+4. **Habits come back one at a time** (*Atomic Habits* / *Tiny Habits*). After 10 of 14 locked-in days in Build mode, the app offers the next habit, easiest first.
+5. **Accountability in one tap:** the Sunday check-in is one optional line. The urge button and the cookie jar stay, because those are what he responds to.
+6. **Study blocks are the schedule.** In Exam mode, 4 slots of 90 min turn "study all day" into four concrete finish lines. The tree grows with each block.
 
 ## What we count, and why (research)
 

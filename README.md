@@ -1,29 +1,14 @@
 # Comeback
 
-A personal, mobile-first habit tracker for an exchange semester. You only track **done or not done**, and each check grows **today's tree**.
+A personal, mobile-first habit tracker for an exchange semester, built to be **as lean as possible**: you only ever see the few things that matter right now.
 
-- **Today:** 8 habits. Most are one tap; a few ask one quick thing:
-  - **Training:** pick Gym, Swimming or your own sports (Volleyball, Hiking …).
-  - **Study:** add blocks of 15 / 30 / 45 / 60 / 90 / 120 min. They add up, so you get both time and number of sessions.
-  - **Driving theory:** after each practice sheet (Bogen), tap **Passed** or **Not passed**. You see sheets today, the total, and how many of your last 10 you passed.
-  - **Create:** "worked on content" and/or "published a video".
-  - **Morning lock-in:** an if-then routine. When you wake up: out of bed → breakfast → start something productive, with no scrolling.
-
-  Each habit done moves the tree through 6 stages (seed → sprout → sapling → young tree → tree → full tree with blossoms) and hangs a fruit in that habit's color.
-- **Lock in:** built for cutting cheap dopamine (Reels/TikTok) with *Atomic Habits*, David Goggins and Duolingo mechanics:
-  - **Streak with freezes:** a day counts at 3 checks (configurable). Every 7 days earns a ❄️ that saves one missed day, so only missing twice breaks it.
-  - **30-day reset:** reel-free days out of 30 (*Dopamine Nation*). A slip doesn't reset you to zero.
-  - **"I feel the urge to scroll":** turn the urge into a rep (15-min study block, one Bogen, Spanish lesson, push-ups, walk, cold shower or a 10-minute wait). Study, Bogen and Spanish also log the habit. Opening `…#urge` jumps straight here, so an iOS Shortcut can send you here whenever Instagram opens.
-  - **Cookie jar** (Goggins): automatic wins (urges beaten, full trees, Bögen passed, goals) plus your own.
-  - **Accountability mirror:** a 2-minute review Saturday to Monday. Your "one change" shows during the next week.
-  - **Phone setup:** a one-time checklist (charger outside the bedroom, the one sec app for Instagram, grayscale on triple-click with auto-off for the camera, focus mode, one offline adventure a week).
-  - **Identity, fuel and eras:** "I'm someone who locks in", a daily line of your own fuel (add your favorite lyrics in Settings), and eras named after Kanye's albums from *The College Dropout* to *Donda*, unlocked by votes (checks + urges beaten).
-  - On Today: a 🔥 chip, your fuel line, minimum ("2-minute") versions under each habit, and a "Don't miss twice" tag on anything you skipped yesterday.
-- **Forest:** every day becomes a tree in a monthly calendar, sized by how much you did. Tap a day to fix it.
-- **Goals:** semester goals (e.g. 36× Gym, 10× Swimming, 8 videos published) with progress bars. Each goal you reach brings an animal to your forest.
-- **Settings:** turn habits on/off, manage your sports, change goal numbers, and back up your data.
-
-Only study time and Bögen are counted; everything else is done or not done. There are no streaks and no red "failed" states. The design notes are in [`docs/UX.md`](docs/UX.md).
+- **Modes (seasons):** 🎓 **Exam mode** (study 4×90 min, sleep on time, clean day), 🧱 **Build mode** (morning lock-in, training, study 2×60 min) and 🏔️ **Off-grid** (clean day, training). Switch in one tap; everything outside the mode's focus is paused, with no guilt. You can edit the focus (max 4) and the study blocks per mode.
+- **Today:** a tree that grows with your focus (study grows it block by block), 2–4 focus rows, an "Urge to scroll? Turn it into a rep" button, and "Did something else too?" to log anything outside your focus.
+- **Locked in** = all focus done. That's the one daily question.
+- **Progress:** Kanye eras as your level (*The College Dropout* → *Donda*, one step per locked-in day), a streak where a ❄️ forgives one missed day (never miss twice), a forest calendar with one tree per day, and Goggins' cookie jar.
+- **Adding habits back:** in Build mode, after 10 locked-in days out of the last 14, the app offers the next habit (supplements first, then driving theory, Spanish, create).
+- **Sunday check-in:** one optional line, "one change for next week", shown all week.
+- **Settings:** your clean-day rule (private, only "Clean day" shows on screen), fuel lines, phone setup checklist, habits, sports, appearance and backup.
 
 ## Run it
 
@@ -44,10 +29,10 @@ React 18 + TypeScript + Vite. There's no backend: data is saved in `localStorage
 ```
 src/
   lib/date.ts        local days, 4:00 rollover, Monday weeks
-  domain/            types, habits & goals, progress (tree stages, goal counts), migration   ← pure, tested
+  domain/            types, habits, modes & focus (locked in, streak, eras, ladder), progress, migration   ← pure, tested
   data/              DataStore interface, LocalStore, StoreProvider
-  components/        Tree (SVG), Sheet, Toast
-  views/             Today, Forest, Goals, Settings
+  components/        Tree (SVG), Sheet, Toast, Urge (urge → rep, phone setup list)
+  views/             Today, Progress (ForestView), Settings
 supabase/schema.sql  table for cloud sync later
 legacy/              the earlier pixel-forest prototype
 ```

@@ -2,7 +2,8 @@ import { useRef, useState, type ReactNode } from "react";
 import { useToast } from "../components/Toast";
 import { useStore } from "../data/StoreProvider";
 import { emptyData } from "../domain/defaults";
-import { GOALS, HABITS } from "../domain/habits";
+import { HABITS } from "../domain/habits";
+import { SETUP } from "../components/Urge";
 import { normalize } from "../domain/migrate";
 import type { Settings } from "../domain/types";
 
@@ -41,7 +42,7 @@ export function SettingsView() {
         <h1>Settings</h1>
       </header>
 
-      <Section title="Who you're becoming" hint="Shown at the top of Lock in. Every check is a vote for this.">
+      <Section title="Who you're becoming" hint="Shown on Progress. Every locked-in day is a vote for this.">
         <input
           className="text-input"
           value={s.identity}
@@ -76,27 +77,36 @@ export function SettingsView() {
         </form>
       </Section>
 
-      <Section title="Streak" hint="Keep it small, like Duolingo: a day counts when you reach this many checks.">
-        <div className="row">
-          <label htmlFor="daily-goal">Checks per streak day</label>
-          <div className="stepper">
-            <button type="button" aria-label="Fewer checks" onClick={() => set({ dailyGoal: Math.max(1, s.dailyGoal - 1) })}>
-              −
-            </button>
-            <input id="daily-goal" type="number" inputMode="numeric" min={1} max={9} value={s.dailyGoal} readOnly />
-            <button type="button" aria-label="More checks" onClick={() => set({ dailyGoal: Math.min(9, s.dailyGoal + 1) })}>
-              +
-            </button>
-          </div>
-        </div>
-        <div className="row">
-          <span>30-day reset {s.resetStart ? `· since ${s.resetStart}` : "· not started"}</span>
-          {s.resetStart && (
-            <button className="text-btn" onClick={() => set({ resetStart: undefined })}>
-              Stop
-            </button>
-          )}
-        </div>
+      <Section title="Clean day" hint="Your rule. Only “Clean day” shows on the screen, so it stays private.">
+        <textarea
+          className="text-input area"
+          rows={3}
+          value={s.cleanRule}
+          onChange={(e) => set({ cleanRule: e.target.value })}
+          aria-label="What a clean day means to you"
+          maxLength={200}
+        />
+      </Section>
+
+      <Section title="Phone setup" hint="Set up once, so you need willpower less often. Tap a step when it's done.">
+        <ul className="setup">
+          {SETUP.map((x) => {
+            const on = !!s.setup[x.id];
+            return (
+              <li key={x.id}>
+                <button className={`setup-item${on ? " on" : ""}`} aria-pressed={on} onClick={() => set({ setup: { ...s.setup, [x.id]: !on } })}>
+                  <span className="check" aria-hidden="true">
+                    {on ? "✓" : ""}
+                  </span>
+                  <span>
+                    <strong>{x.title}</strong>
+                    <span className="muted small">{x.how}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </Section>
 
       <Section title="Habits" hint="Turn off what you don't need right now. Your history stays.">
@@ -133,35 +143,6 @@ export function SettingsView() {
             Add
           </button>
         </form>
-      </Section>
-
-      <Section title="Goals" hint="How many times by the end of your exchange.">
-        {GOALS.filter((g) => s.active[g.habit]).map((g) => (
-          <div className="row" key={g.id}>
-            <label htmlFor={`goal-${g.id}`}>
-              <span aria-hidden="true">{g.animal}</span> {g.label}
-            </label>
-            <div className="stepper">
-              <button type="button" aria-label={`Lower ${g.label} goal`} onClick={() => set({ goals: { ...s.goals, [g.id]: Math.max(1, s.goals[g.id] - 1) } })}>
-                −
-              </button>
-              <input
-                id={`goal-${g.id}`}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                value={s.goals[g.id]}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (!Number.isNaN(v) && v > 0) set({ goals: { ...s.goals, [g.id]: v } });
-                }}
-              />
-              <button type="button" aria-label={`Raise ${g.label} goal`} onClick={() => set({ goals: { ...s.goals, [g.id]: s.goals[g.id] + 1 } })}>
-                +
-              </button>
-            </div>
-          </div>
-        ))}
       </Section>
 
       <Section title="Appearance">

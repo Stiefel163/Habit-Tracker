@@ -44,7 +44,9 @@ export function fromV1(raw: { entries?: V1Entry[] }): AppData {
 export function normalize(raw: unknown): AppData {
   const r = raw as Partial<AppData> & { entries?: V1Entry[] };
   if (r && r.version === 2 && r.days && typeof r.days === "object") {
-    return { version: 2, days: r.days, urges: r.urges ?? {}, wins: r.wins ?? [], reviews: r.reviews ?? {}, settings: withDefaults(r.settings) };
+    const reviews: AppData["reviews"] = {};
+    for (const [k, v] of Object.entries(r.reviews ?? {})) if (v && typeof v.change === "string") reviews[k] = { change: v.change };
+    return { version: 2, days: r.days, urges: r.urges ?? {}, wins: r.wins ?? [], reviews, settings: withDefaults(r.settings) };
   }
   if (r && Array.isArray(r.entries)) return fromV1(r);
   throw new Error("Unknown data format");

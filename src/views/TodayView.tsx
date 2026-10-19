@@ -2,30 +2,71 @@ import { useState } from "react";
 import { Sheet } from "../components/Sheet";
 import { Tree } from "../components/Tree";
 import { useStore } from "../data/StoreProvider";
-import { CREATE_OPTIONS, SHEET_PASS_RULE, SPORT_PREFIX, STUDY_BLOCKS, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
-import { STAGES, activeHabits, dayProgress, formatMin, isDone, sheetStats, sheetsOf, stageOf, studyMinutes, studyTotals } from "../domain/progress";
-import { computeStreak, fuelFor, missedYesterday } from "../domain/lockin";
-import type { DayLog, HabitId } from "../domain/types";
-import { reviewWeek } from "../components/LockIn";
-import { dayIndexInWeek } from "../lib/date";
-import { formatLong, relativeLabel, weekDays, weekStart, weekdayShort, fromKey, type DayKey } from "../lib/date";
+import { MAX_FOCUS, checkInWeek, cleanDays, computeStreak, dayFocus, fuelFor, nextHabit, studyTarget } from "../domain/focus";
+import { CREATE_OPTIONS, HABITS, SHEET_PASS_RULE, SPORT_PREFIX, STUDY_BLOCKS, TRAINING_FIXED, activityLabel, type HabitDef } from "../domain/habits";
+import { STAGES, activeHabits, formatMin, isDone, sheetStats, sheetsOf, stageOf, studyMinutes, studyTotals } from "../domain/progress";
+import type { DayLog, HabitId, Mode, ModeId } from "../domain/types";
+import { addDays, formatLong, relativeLabel, weekDays, weekStart, type DayKey } from "../lib/date";
 
-export function TodayView({ date, today, setDate, goLockIn }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void; goLockIn: () => void }) {
-  const { data, setHabit } = useStore();
-  const streak = computeStreak(data, today);
-  const missed = date === today ? missedYesterday(data, date) : new Set<HabitId>();
-  const mirrorDue = date === today && [0, 5, 6].includes(dayIndexInWeek(today)) && !data.reviews[reviewWeek(today)];
+export function TodayView({ date, today, setDate, onUrge }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void; onUrge: () => void }) {
+  const { data, setHabit, update } = useStore();
   const s = data.settings;
   const log = data.days[date];
-  const { done, total, p } = dayProgress(log, s);
-  const stage = stageOf(p);
-  const doneIds = activeHabits(s).filter((h) => isDone(log, h.id)).map((h) => h.id);
+  const f = dayFocus(data, date);
+  const stage = stageOf(f.p);
+  const streak = computeStreak(data, today);
   const [picker, setPicker] = useState<HabitId | null>(null);
-  const left = total - done;
+  const [modeOpen, setModeOpen] = useState(false);
+  const [extrasOpen, setExtrasOpen] = useState(false);
+  const [change, setChange] = useState("");
+  const left = f.total - f.done;
+  const doneIds = f.focus.filter((_, i) => f.parts[i] >= 1).map((h) => h.id);
+  const focusIds = new Set(f.focus.map((h) => h.id));
+  const extras = activeHabits(s).filter((h) => !focusIds.has(h.id));
+  const extrasDone = extras.filter((h) => isDone(log, h.id));
+  const next = date === today ? nextHabit(data, today) : null;
+  const ciWeek = date === today ? checkInWeek(today) : null;
+  const hasHistory = Object.keys(data.days).some((d) => d < weekStart(today));
+  const checkInDue = ciWeek !== null && hasHistory && !data.reviews[ciWeek];
+  const lastChange = data.reviews[addDays(weekStart(today), -7)]?.change || (ciWeek ? data.reviews[ciWeek]?.change : "");
 
   const tap = (h: HabitDef) => {
     if (h.kind === "check") setHabit(date, h.id, isDone(log, h.id) ? [] : ["done"]);
     else setPicker(h.id);
+  };
+
+  const row = (h: HabitDef) => {
+    if (h.id === "study" && focusIds.has("study")) return <StudyRow key={h.id} date={date} mode={f.mode} onOpen={() => setPicker("study")} />;
+    const on = isDone(log, h.id);
+    const opens = h.kind !== "check";
+    const clean = h.id === "reelFree" ? cleanDays(data, date) : 0;
+    const sub =
+      h.id === "reelFree" ? (clean ? `${clean} clean ${clean === 1 ? "day" : "days"} in the last 30` : "Tap when today was clean") : on ? doneLine(h, log) ?? h.hint : h.hint;
+    return (
+      <li key={h.id}>
+        <button
+          className={`habit${on ? " on" : ""}`}
+          onClick={() => {
+            setExtrasOpen(false);
+            tap(h);
+          }}
+          aria-pressed={opens ? undefined : on}
+          aria-haspopup={opens ? "dialog" : undefined}
+          aria-label={`${h.name}: ${on ? "done" : "not done"}${on && opens ? `, ${sub}` : ""}`}
+        >
+          <span className="habit-icon" aria-hidden="true">
+            {h.icon}
+          </span>
+          <span className="habit-text">
+            <span className="habit-name">{h.name}</span>
+            <span className="habit-sub">{sub}</span>
+          </span>
+          <span className="check" aria-hidden="true" style={on ? { background: h.color, borderColor: h.color } : undefined}>
+            {on ? "✓" : ""}
+          </span>
+        </button>
+      </li>
+    );
   };
 
   return (
@@ -40,74 +81,259 @@ export function TodayView({ date, today, setDate, goLockIn }: { date: DayKey; to
             Back to today
           </button>
         ) : (
-          <button className={`flame-chip${streak.todayMet ? " lit" : ""}`} onClick={goLockIn} aria-label={`${streak.days} day streak. Open Lock in`}>
+          <span className={`flame-chip${streak.todayMet ? " lit" : ""}`} aria-label={`${streak.days} day streak`}>
             <span aria-hidden="true">🔥</span> {streak.days}
-          </button>
+          </span>
         )}
       </header>
-      {date === today && s.fuel.length > 0 && <p className="fuel-line">“{fuelFor(s.fuel, today)}”</p>}
-      {mirrorDue && (
-        <button className="mirror-prompt" onClick={goLockIn}>
-          🪞 Accountability mirror is due · 2 min ›
+
+      <div className="mode-row">
+        <button className="mode-chip" onClick={() => setModeOpen(true)} aria-haspopup="dialog">
+          <span aria-hidden="true">{f.mode.icon}</span> {f.mode.name} <span aria-hidden="true">›</span>
         </button>
-      )}
+        {date === today && (
+          <button className="text-btn" onClick={() => setDate(addDays(today, -1))}>
+            Fill in yesterday
+          </button>
+        )}
+      </div>
+      {date === today && s.fuel.length > 0 && <p className="fuel-line">“{fuelFor(s.fuel, today)}”</p>}
 
       <section className={`tree-card stage-${stage}`} aria-live="polite">
-        <Tree p={p} done={doneIds} label={`${STAGES[stage]}: ${done} of ${total} habits done`} />
+        <Tree p={f.p} done={doneIds} label={`${STAGES[stage]}: ${f.done} of ${f.total} focus habits done`} />
         <div className="tree-info">
           <p className="tree-count">
-            <span className="big">{done}</span>
-            <span className="of">/ {total}</span>
+            <span className="big">{f.done}</span>
+            <span className="of">/ {f.total}</span>
           </p>
-          <p className="tree-stage">{STAGES[stage]}</p>
+          <p className="tree-stage">{left === 0 ? "Locked in 🔥" : STAGES[stage]}</p>
           <div className="bar" aria-hidden="true">
-            <i style={{ width: `${p * 100}%` }} />
+            <i style={{ width: `${f.p * 100}%` }} />
           </div>
-          <p className="muted small">{left === 0 ? "Everything done. Full tree! 🌳" : `${left} more ${left === 1 ? "check" : "checks"} for a full tree`}</p>
+          <p className="muted small">{left === 0 ? "Everything that matters today: done." : `${left} more to lock in today`}</p>
         </div>
       </section>
 
-      <ul className="habits">
-        {activeHabits(s).map((h) => {
-          const on = isDone(log, h.id);
-          const sub = on ? doneLine(h, log) ?? h.hint : h.hint;
-          const opens = h.kind !== "check";
-          const twice = !on && missed.has(h.id);
-          return (
-            <li key={h.id}>
+      {lastChange && date === today && (
+        <p className="this-week">
+          <span className="muted small">This week's one change</span> {lastChange}
+        </p>
+      )}
+
+      <ul className="habits">{f.focus.map(row)}</ul>
+
+      <button className="urge-btn" onClick={onUrge}>
+        Urge to scroll? Turn it into a rep
+      </button>
+
+      {extras.length > 0 && (
+        <button className="extras-btn" onClick={() => setExtrasOpen(true)} aria-haspopup="dialog">
+          {extrasDone.length ? `Also done: ${extrasDone.map((h) => h.name).join(", ")}` : "Did something else too? Log it"}
+          <span aria-hidden="true"> ›</span>
+        </button>
+      )}
+
+      {next?.ready && (
+        <section className="panel next-up">
+          <p>
+            <strong>{next.locked} of the last 14 days locked in.</strong> Ready to add {next.habit.icon} {next.habit.name} to your focus?
+          </p>
+          <button
+            className="secondary"
+            onClick={() =>
+              update((d) => {
+                const m = d.settings.modes[f.mode.id];
+                return { ...d, settings: { ...d.settings, modes: { ...d.settings.modes, [m.id]: { ...m, focus: [...m.focus, next.habit.id] } } } };
+              })
+            }
+          >
+            Add {next.habit.name}
+          </button>
+        </section>
+      )}
+
+      {checkInDue && ciWeek && (
+        <section className="panel checkin">
+          <h2 className="section-title">Sunday check-in · 30 seconds</h2>
+          <label className="mirror-field">
+            <span>One change for next week (optional)</span>
+            <input className="text-input" value={change} onChange={(e) => setChange(e.target.value)} placeholder="Phone in the kitchen at 23:00" maxLength={100} />
+          </label>
+          <div className="btn-row">
+            <button className="secondary" onClick={() => update((d) => ({ ...d, reviews: { ...d.reviews, [ciWeek]: { change: change.trim() } } }))}>
+              Keep {f.mode.name}
+            </button>
+            <button
+              className="text-btn"
+              onClick={() => {
+                update((d) => ({ ...d, reviews: { ...d.reviews, [ciWeek]: { change: change.trim() } } }));
+                setModeOpen(true);
+              }}
+            >
+              Switch mode
+            </button>
+          </div>
+        </section>
+      )}
+
+      {extrasOpen && (
+        <Sheet title="Also done today" onClose={() => setExtrasOpen(false)}>
+          <p className="muted small">Not in focus right now, but it still counts for the forest.</p>
+          <ul className="habits">{extras.map(row)}</ul>
+        </Sheet>
+      )}
+      {modeOpen && <ModeSheet date={today} onClose={() => setModeOpen(false)} />}
+      {picker === "training" && <TrainingPicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "create" && <CreatePicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "study" && <StudyPicker date={date} onClose={() => setPicker(null)} />}
+      {picker === "driving" && <SheetsPicker date={date} onClose={() => setPicker(null)} />}
+    </div>
+  );
+}
+
+/** Study in focus: one tap per finished block. The tree grows with every block. */
+function StudyRow({ date, mode, onOpen }: { date: DayKey; mode: Mode; onOpen: () => void }) {
+  const { data, setHabit } = useStore();
+  const entries = data.days[date]?.study ?? [];
+  const min = studyMinutes(data.days[date]);
+  const target = studyTarget(mode);
+  const on = min >= target;
+
+  const setTotal = (total: number) => {
+    if (total >= min) return setHabit(date, "study", [...entries, String(total - min)]);
+    const out: string[] = [];
+    let acc = 0;
+    for (const e of entries) {
+      const v = parseInt(e, 10) || 0;
+      if (acc + v <= total) {
+        out.push(e);
+        acc += v;
+      } else {
+        if (total - acc > 0) out.push(String(total - acc));
+        break;
+      }
+    }
+    setHabit(date, "study", out);
+  };
+
+  return (
+    <li>
+      <div className={`habit study-row${on ? " on" : ""}`}>
+        <button className="study-main" onClick={onOpen} aria-haspopup="dialog" aria-label={`Study: ${formatMin(min)} of ${formatMin(target)}. Open study details`}>
+          <span className="habit-icon" aria-hidden="true">
+            📚
+          </span>
+          <span className="habit-text">
+            <span className="habit-name">Study</span>
+            <span className="habit-sub">
+              {formatMin(min)} of {formatMin(target)}
+            </span>
+          </span>
+        </button>
+        <div className="slots" role="group" aria-label={`Study blocks of ${mode.blockMin} minutes`}>
+          {Array.from({ length: mode.studyBlocks }, (_, i) => {
+            const fill = Math.max(0, Math.min(1, (min - i * mode.blockMin) / mode.blockMin));
+            const full = fill >= 1;
+            return (
               <button
-                className={`habit${on ? " on" : ""}`}
-                onClick={() => tap(h)}
-                aria-pressed={opens ? undefined : on}
-                aria-haspopup={opens ? "dialog" : undefined}
-                aria-label={`${h.name}: ${on ? "done" : "not done"}${on && opens ? `, ${sub}` : ""}${twice ? ". Missed yesterday: don't miss twice" : ""}`}
+                key={i}
+                className={`slot${full ? " full" : fill > 0 ? " part" : ""}`}
+                style={{ ["--fill" as string]: `${Math.round(fill * 100)}%` }}
+                aria-pressed={full}
+                aria-label={`Block ${i + 1}, ${mode.blockMin} minutes: ${full ? "done" : "not done"}`}
+                onClick={() => setTotal(full ? i * mode.blockMin : (i + 1) * mode.blockMin)}
               >
-                <span className="habit-icon" aria-hidden="true">
-                  {h.icon}
+                {full ? "✓" : mode.blockMin}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+const MODE_ORDER: ModeId[] = ["exam", "build", "offgrid"];
+
+/** Switch the season you're in, and choose its few focus habits. */
+function ModeSheet({ date, onClose }: { date: DayKey; onClose: () => void }) {
+  const { data, update } = useStore();
+  const s = data.settings;
+  const current = dayFocus(data, date).mode;
+  const switchTo = (id: ModeId) =>
+    update((d) => ({
+      ...d,
+      settings: { ...d.settings, modeLog: [...d.settings.modeLog.filter((e) => e.date !== date), { date, mode: id }] },
+    }));
+  const setMode = (patch: Partial<Mode>) =>
+    update((d) => ({ ...d, settings: { ...d.settings, modes: { ...d.settings.modes, [current.id]: { ...d.settings.modes[current.id], ...patch } } } }));
+  const toggleFocus = (h: HabitId) => {
+    const has = current.focus.includes(h);
+    if (!has && current.focus.length >= MAX_FOCUS) return;
+    setMode({ focus: has ? current.focus.filter((x) => x !== h) : [...current.focus, h] });
+  };
+
+  return (
+    <Sheet title="What season are you in?" onClose={onClose}>
+      <ul className="modes">
+        {MODE_ORDER.map((id) => {
+          const m = s.modes[id];
+          const on = id === current.id;
+          return (
+            <li key={id}>
+              <button className={`mode-card${on ? " on" : ""}`} aria-pressed={on} onClick={() => switchTo(id)}>
+                <span className="mode-icon" aria-hidden="true">
+                  {m.icon}
                 </span>
-                <span className="habit-text">
-                  <span className="habit-name">
-                    {h.name}
-                    {twice && <span className="twice">Don't miss twice</span>}
-                  </span>
-                  <span className="habit-sub">{sub}</span>
-                </span>
-                <span className="check" aria-hidden="true" style={on ? { background: h.color, borderColor: h.color } : undefined}>
-                  {on ? "✓" : ""}
+                <span>
+                  <strong>{m.name}</strong>
+                  <span className="muted small">{m.why}</span>
+                  <span className="mode-focus">{m.focus.map((h) => HABITS.find((x) => x.id === h)?.name).join(" · ")}</span>
                 </span>
               </button>
             </li>
           );
         })}
       </ul>
-
-      <WeekStrip date={date} today={today} setDate={setDate} />
-
-      {picker === "training" && <TrainingPicker date={date} onClose={() => setPicker(null)} />}
-      {picker === "create" && <CreatePicker date={date} onClose={() => setPicker(null)} />}
-      {picker === "study" && <StudyPicker date={date} onClose={() => setPicker(null)} />}
-      {picker === "driving" && <SheetsPicker date={date} onClose={() => setPicker(null)} />}
-    </div>
+      <h3 className="section-title">
+        Focus in {current.name} · max {MAX_FOCUS}
+      </h3>
+      <div className="focus-chips">
+        {activeHabits(s).map((h) => {
+          const on = current.focus.includes(h.id);
+          return (
+            <button key={h.id} className={`fchip${on ? " on" : ""}`} aria-pressed={on} onClick={() => toggleFocus(h.id)} disabled={!on && current.focus.length >= MAX_FOCUS}>
+              <span aria-hidden="true">{h.icon}</span> {h.name}
+            </button>
+          );
+        })}
+      </div>
+      {current.focus.includes("study") && (
+        <div className="row">
+          <span>
+            Study per day: {current.studyBlocks} × {current.blockMin} min = {formatMin(studyTarget(current))}
+          </span>
+          <div className="stepper">
+            <button type="button" aria-label="One block less" onClick={() => setMode({ studyBlocks: Math.max(1, current.studyBlocks - 1) })}>
+              −
+            </button>
+            <input type="number" readOnly value={current.studyBlocks} aria-label="Study blocks per day" />
+            <button type="button" aria-label="One block more" onClick={() => setMode({ studyBlocks: Math.min(8, current.studyBlocks + 1) })}>
+              +
+            </button>
+          </div>
+        </div>
+      )}
+      {current.focus.includes("study") && (
+        <div className="seg four" role="radiogroup" aria-label="Block length">
+          {[30, 45, 60, 90].map((m) => (
+            <button key={m} role="radio" aria-checked={current.blockMin === m} className={current.blockMin === m ? "on" : ""} onClick={() => setMode({ blockMin: m })}>
+              {m} min
+            </button>
+          ))}
+        </div>
+      )}
+    </Sheet>
   );
 }
 
@@ -129,38 +355,6 @@ function doneLine(h: HabitDef, log: DayLog | undefined): string | null {
     default:
       return null;
   }
-}
-
-function WeekStrip({ date, today, setDate }: { date: DayKey; today: DayKey; setDate: (d: DayKey) => void }) {
-  const { data } = useStore();
-  const s = data.settings;
-  return (
-    <section className="week">
-      <h2 className="section-title">This week</h2>
-      <ul className="week-row">
-        {weekDays(weekStart(date)).map((d) => {
-          const log = data.days[d];
-          const { p, done, total } = dayProgress(log, s);
-          const future = d > today;
-          return (
-            <li key={d}>
-              <button
-                className={`week-day${d === date ? " sel" : ""}${d === today ? " today" : ""}`}
-                disabled={future}
-                onClick={() => setDate(d)}
-                aria-label={`${formatLong(d)}: ${done} of ${total} done`}
-                aria-current={d === date ? "date" : undefined}
-              >
-                <Tree p={future ? 0 : p} done={activeHabits(s).filter((h) => isDone(log, h.id)).map((h) => h.id)} size={40} mini />
-                <span>{weekdayShort(d).slice(0, 2)}</span>
-                <span className="muted">{fromKey(d).getDate()}</span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
 }
 
 function ChoiceList({ options, selected, onToggle }: { options: { id: string; label: string; icon: string }[]; selected: string[]; onToggle: (id: string) => void }) {

@@ -1,4 +1,4 @@
-import type { GoalId, HabitId } from "./types";
+import type { HabitId } from "./types";
 
 export interface HabitDef {
   id: HabitId;
@@ -11,11 +11,11 @@ export interface HabitDef {
 }
 
 export const HABITS: HabitDef[] = [
-  { id: "sleep", name: "Good sleep", icon: "🌙", hint: "Phone at the charger by 23:00", color: "#9b8cff", kind: "check" },
+  { id: "sleep", name: "Sleep on time", icon: "🌙", hint: "Phone at the charger, lights out", color: "#9b8cff", kind: "check" },
   { id: "noReels", name: "Morning lock-in", icon: "☀️", hint: "Up, breakfast, start", color: "#c7f464", kind: "check" },
-  { id: "reelFree", name: "Reel-free day", icon: "🧠", hint: "No feed. Posting & DMs OK", color: "#ffffff", kind: "check" },
+  { id: "reelFree", name: "Clean day", icon: "🧠", hint: "Your rule, see Settings", color: "#e8eef2", kind: "check" },
   { id: "training", name: "Training", icon: "🏋️", hint: "Minimum: pack the bag and go", color: "#ff9f43", kind: "choice" },
-  { id: "study", name: "Study", icon: "📚", hint: "Minimum: one 15-min block", color: "#f4a6ff", kind: "minutes" },
+  { id: "study", name: "Study", icon: "📚", hint: "Tap a block when it's done", color: "#f4a6ff", kind: "minutes" },
   { id: "spanish", name: "Spanish", icon: "🇪🇸", hint: "Minimum: one lesson", color: "#ffd23f", kind: "check" },
   { id: "driving", name: "Driving theory", icon: "🚗", hint: "Minimum: one Bogen", color: "#4fa3ff", kind: "sheets" },
   { id: "create", name: "Create", icon: "🎬", hint: "Minimum: cut one clip", color: "#ff5d8f", kind: "choice" },
@@ -39,32 +39,10 @@ export const CREATE_OPTIONS = [
   { id: "published", label: "Published a video", icon: "🚀" },
 ];
 
-export interface GoalDef {
-  id: GoalId;
-  habit: HabitId;
-  label: string; // "40× Gym" style: number is added by the view
-  unit: string;
-  animal: string;
-  animalName: string;
-}
-
-/** Long-term goals for the semester. Each one you finish brings an animal to your forest. */
-export const GOALS: GoalDef[] = [
-  { id: "gym", habit: "training", label: "Gym", unit: "sessions", animal: "🐻", animalName: "Grizzly" },
-  { id: "swim", habit: "training", label: "Swimming", unit: "swims", animal: "🦫", animalName: "Beaver" },
-  { id: "sport", habit: "training", label: "Other sports", unit: "games", animal: "🐺", animalName: "Wolf" },
-  { id: "spanish", habit: "spanish", label: "Spanish", unit: "days", animal: "🦜", animalName: "Parrot" },
-  { id: "studyHours", habit: "study", label: "Study hours", unit: "hours", animal: "🐢", animalName: "Turtle" },
-  { id: "driving", habit: "driving", label: "Practice sheets", unit: "sheets", animal: "🫎", animalName: "Moose" },
-  { id: "create", habit: "create", label: "Create", unit: "days", animal: "🦊", animalName: "Fox" },
-  { id: "published", habit: "create", label: "Videos published", unit: "videos", animal: "🦅", animalName: "Eagle" },
-  { id: "sleep", habit: "sleep", label: "Good sleep", unit: "nights", animal: "🦉", animalName: "Owl" },
-  { id: "noReels", habit: "noReels", label: "Lock-in mornings", unit: "mornings", animal: "🐿️", animalName: "Squirrel" },
-  { id: "reelFree", habit: "reelFree", label: "Reel-free days", unit: "days", animal: "🦌", animalName: "Elk" },
-  { id: "supplements", habit: "supplements", label: "Supplements", unit: "days", animal: "🐇", animalName: "Hare" },
-];
-
 export function activityLabel(id: string): string {
   if (id.startsWith(SPORT_PREFIX)) return id.slice(SPORT_PREFIX.length);
   return [...TRAINING_FIXED, ...CREATE_OPTIONS].find((o) => o.id === id)?.label ?? id;
 }
+
+/** After exams, add habits back one at a time, easiest first. */
+export const LADDER: HabitId[] = ["supplements", "driving", "spanish", "create", "noReels", "training", "sleep", "reelFree", "study"];
