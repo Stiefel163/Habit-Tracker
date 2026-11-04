@@ -255,3 +255,13 @@ p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Cookie jar on Home */
+.cookie { display: grid; gap: 8px; padding: 16px 18px; border-radius: 20px; background: var(--surface); border: 1px solid rgb(227 181 91 / 0.28); }
+.cookie.empty { border-style: dashed; border-color: var(--line); color: var(--muted); }
+.cookie-body { display: grid; gap: 6px; animation: fade 0.3s ease; }
+.cookie-tag { font: 600 0.75rem var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); }
+.cookie-tag span { color: var(--muted); }
+.cookie-text { font-size: 1.15rem; font-weight: 600; line-height: 1.35; }
+.cookie-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.small-btn { min-height: 44px; padding: 0 14px; font-size: 0.9375rem; }

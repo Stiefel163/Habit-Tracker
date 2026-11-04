@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { Bar } from "../components/Bar";
 import { LogSheet, type LogKindUI } from "../components/LogSheets";
 import { useStore } from "../data/StoreProvider";
-import { formatHours, journey, playerOf, spanishStreak, statsFor, validLogs, weekResult } from "../domain/rpg";
-import { weekDays, weekStart, type DayKey } from "../lib/date";
+import { cookieJar, formatHours, journey, playerOf, spanishStreak, statsFor, validLogs, weekResult } from "../domain/rpg";
+import { formatShort, weekDays, weekStart, type DayKey } from "../lib/date";
 
-export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () => void }) {
+export function HomeView({ today, goSettings, goProgress }: { today: DayKey; goSettings: () => void; goProgress: () => void }) {
   const { data } = useStore();
   const s = data.settings;
   const [open, setOpen] = useState<LogKindUI | null>(null);
@@ -47,6 +47,8 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
           </button>
         )}
       </section>
+
+      <CookieCard today={today} goProgress={goProgress} />
 
       <section className={`streak${streak.current ? " lit" : ""}`} aria-label="Spanish streak">
         <span className="flame" aria-hidden="true">
@@ -122,5 +124,54 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
 
       {open && <LogSheet kind={open} today={today} onClose={() => setOpen(null)} />}
     </div>
+  );
+}
+
+/** One thing you already did, every time you open the app. Tap for another. */
+function CookieCard({ today, goProgress }: { today: DayKey; goProgress: () => void }) {
+  const { data } = useStore();
+  const jar = useMemo(() => cookieJar(data, today), [data, today]);
+  const [pick, setPick] = useState(() => Math.random());
+  const idx = jar.length ? Math.floor(pick * jar.length) % jar.length : -1;
+  const c = idx >= 0 ? jar[idx] : null;
+
+  const another = () => {
+    if (jar.length < 2) return;
+    let n = Math.random();
+    while (Math.floor(n * jar.length) === idx) n = Math.random();
+    setPick(n);
+  };
+
+  if (!c) {
+    return (
+      <section className="cookie empty" aria-label="Cookie jar">
+        <p className="cookie-tag">🍪 Cookie jar</p>
+        <p>Your wins land here. Start with one you already earned, like the scholarship.</p>
+        <button className="text-btn left" onClick={goProgress}>
+          Add a win ›
+        </button>
+      </section>
+    );
+  }
+  return (
+    <section className="cookie" aria-label="Cookie jar">
+      <div className="cookie-body" key={c.key} aria-live="polite">
+        <p className="cookie-tag">
+          {c.tag}
+          {c.date && <span> · {formatShort(c.date)}</span>}
+        </p>
+        <p className="cookie-text">{c.text}</p>
+      </div>
+      <div className="cookie-actions">
+        <button className="text-btn left" onClick={goProgress}>
+          {jar.length} in the jar ›
+        </button>
+        {jar.length > 1 && (
+          <button className="secondary small-btn" onClick={another}>
+            Another one ↻
+          </button>
+        )}
+      </div>
+    </section>
   );
 }

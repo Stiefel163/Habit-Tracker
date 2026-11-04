@@ -4,6 +4,7 @@ import { useStore } from "../data/StoreProvider";
 import {
   ACHIEVEMENTS,
   RANKS,
+  cookieJar,
   VIDEO_MILESTONES,
   focusStats,
   formatHours,
@@ -45,11 +46,7 @@ export function ProgressView({ today }: { today: DayKey }) {
   for (const a of ACHIEVEMENTS) if (!unlocked.has(a.id) && ![...nextPerMetric].some((id) => ACHIEVEMENTS.find((x) => x.id === id)!.metric === a.metric)) nextPerMetric.add(a.id);
   const shownAchievements = ACHIEVEMENTS.filter((a) => unlocked.has(a.id) || nextPerMetric.has(a.id));
   const [win, setWin] = useState("");
-  const jar = [
-    ...spanish.filter((x) => x.log.better).map((x) => ({ date: x.log.date, text: x.log.better, tag: `🇪🇸 Day ${x.n}` })),
-    ...videos.filter((x) => x.log.better).map((x) => ({ date: x.log.date, text: x.log.better, tag: `🎬 Video #${x.n}` })),
-    ...data.wins.map((w) => ({ date: w.date, text: w.text, tag: "🍪 Win" })),
-  ].sort((a, b) => b.date.localeCompare(a.date));
+  const jar = cookieJar(data, today).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
   const skillStat: Record<string, string> = {
     strength: `${plural(t.strength, "workout")} · ${recent("strength")} in 4 weeks`,
@@ -264,8 +261,8 @@ export function ProgressView({ today }: { today: DayKey }) {
         </form>
         {jar.length > 0 && (
           <ul className="jar">
-            {jar.slice(0, 40).map((c, i) => (
-              <li key={i}>
+            {jar.map((c) => (
+              <li key={c.key}>
                 <span className="muted small">{c.tag}</span>
                 <span>{c.text}</span>
               </li>

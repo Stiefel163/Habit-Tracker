@@ -4,6 +4,7 @@ import { emptyData } from "./defaults";
 import { normalize } from "./migrate";
 import {
   RANKS,
+  cookieJar,
   diff,
   journey,
   masteryOf,
@@ -134,5 +135,24 @@ describe("migration", () => {
   });
   it("keeps the previous day until 4:00", () => {
     expect(appToday(4, new Date(2026, 10, 4, 1, 30))).toBe("2026-11-03");
+  });
+});
+
+describe("cookie jar", () => {
+  it("collects your words, your wins and your achievements", () => {
+    const d = withLogs([
+      log({ kind: "spanish", date: "2026-11-02", better: "Ordered food without English" }),
+      log({ kind: "video", date: "2026-11-03", better: "Shorter intro" }),
+      log({ kind: "bogen", date: "2026-11-03", count: 10 }),
+    ]);
+    d.wins = [{ date: "2026-10-01", text: "Got the scholarship" }];
+    const jar = cookieJar(d, "2026-11-04");
+    expect(jar.map((c) => c.text)).toEqual([
+      "Ordered food without English",
+      "Shorter intro",
+      "Got the scholarship",
+      "You published your first video.",
+      "10 Bögen completed.",
+    ]);
   });
 });

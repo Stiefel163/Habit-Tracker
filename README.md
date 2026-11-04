@@ -6,7 +6,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
 
 ## What's in it
 
-- **Home:** level, rank and XP bar, your vision line, the Spanish streak with its 🛡 Streak Shield, weekly missions (⭐ per completed mission), quick log buttons and skill levels.
+- **Home:** level, rank and XP bar, your vision line, a **cookie jar card** that always shows one thing you've already done (tap *Another one ↻* for a random other), the Spanish streak with its 🛡 Streak Shield, weekly missions (⭐ per completed mission), quick log buttons and skill levels.
 - **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus.
 - **Quick logs** (each under 5 seconds):
   - Strength workout (optional split and duration), +50 XP
