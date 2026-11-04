@@ -6,7 +6,7 @@ import type { DayKey } from "../lib/date";
  * (see rpg.ts), so they can never drift out of sync and can't be gamed.
  */
 
-export type SkillId = "strength" | "swimming" | "spanish" | "creator" | "driving" | "focus";
+export type SkillId = "strength" | "swimming" | "spanish" | "creator" | "driving" | "focus" | "discipline";
 
 export type Split = "push" | "pull" | "legs" | "upper" | "lower" | "full" | "other";
 
@@ -54,7 +54,15 @@ export interface FocusLog extends BaseLog {
   category: string;
 }
 
-export type ActivityLog = StrengthLog | SwimLog | SpanishDay | PublishedVideo | DrivingLog | FocusLog;
+/** Daily good-behaviour check-in. One per day; saving again for that day replaces it. */
+export interface CleanDay extends BaseLog {
+  kind: "clean";
+  social: boolean; // kept social media low
+  goon: boolean; // no gooning
+  sleep: boolean; // kept good sleep times
+}
+
+export type ActivityLog = StrengthLog | SwimLog | SpanishDay | PublishedVideo | DrivingLog | FocusLog | CleanDay;
 export type LogKind = ActivityLog["kind"];
 
 export interface WeeklyTargets {
@@ -64,6 +72,7 @@ export interface WeeklyTargets {
   videos: number;
   bogen: number;
   focusHours: number;
+  clean: number; // days with all three kept
 }
 
 export interface Win {

@@ -4,6 +4,8 @@ import { Sheet } from "../components/Sheet";
 import { useStore } from "../data/StoreProvider";
 import {
   ACHIEVEMENTS,
+  CLEAN_ITEMS,
+  cleanCount,
   TIER_NAME,
   VIDEO_MILESTONES,
   achievementContext,
@@ -134,6 +136,8 @@ export function ProgressView({ today }: { today: DayKey }) {
         </span>
         <span className="muted small">{videos.length ? "Tap for every video you posted ›" : `Milestones at ${VIDEO_MILESTONES.join(", ")}`}</span>
       </button>
+
+      <CleanPanel logs={logs} today={today} />
 
       <section className="panel">
         <h2 className="section-title">Skills</h2>
@@ -379,6 +383,60 @@ function Achievements({ today }: { today: DayKey }) {
           </div>
         </Sheet>
       )}
+    </section>
+  );
+}
+
+/** Good behaviour: the last 7 days at a glance, and the clean-day streak. */
+function CleanPanel({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
+  const clean = new Map(logs.filter((l): l is Extract<ActivityLog, { kind: "clean" }> => l.kind === "clean").map((l) => [l.date, l]));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
+  const full = (d: DayKey) => {
+    const l = clean.get(d);
+    return !!l && cleanCount(l) === 3;
+  };
+  let streak = 0;
+  for (let d = full(today) ? today : addDays(today, -1); full(d); d = addDays(d, -1)) streak++;
+  const total = [...clean.values()].filter((l) => cleanCount(l) === 3).length;
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <h2 className="section-title">🧘 Clean days</h2>
+        <span className="big-num">{total}</span>
+      </div>
+      <p>
+        <strong>{plural(streak, "day")}</strong> <span className="muted">clean in a row</span>
+      </p>
+      <table className="clean-grid">
+        <thead>
+          <tr>
+            <th />
+            {days.map((d) => (
+              <th key={d} scope="col">
+                {d === today ? "Today" : new Date(`${d}T12:00`).toLocaleDateString("en-US", { weekday: "narrow" })}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {CLEAN_ITEMS.map((c) => (
+            <tr key={c.id}>
+              <th scope="row">
+                <span aria-hidden="true">{c.icon}</span> {c.label}
+              </th>
+              {days.map((d) => {
+                const l = clean.get(d);
+                const st = !l ? "none" : l[c.id] ? "yes" : "no";
+                return (
+                  <td key={d} className={st} aria-label={`${d}: ${st === "none" ? "not logged" : st === "yes" ? "kept" : "missed"}`}>
+                    <i />
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </section>
   );
 }

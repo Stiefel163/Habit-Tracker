@@ -7,7 +7,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
 ## What's in it
 
 - **Home (slim):** level card (tap it for the rank ladder and the XP to the next level and rank), quick log at the top, your vision line, a **cookie jar card** with one thing you've already done (tap it to see the whole jar in random order and add a win; *Another one ↻* shows a random other), and weekly missions at the bottom.
-- **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus.
+- **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus, 🧘 Discipline.
 - **Quick logs** (each under 5 seconds):
   - Strength workout (optional split and duration), +50 XP
   - Swim (optional duration), +40 XP
@@ -15,8 +15,9 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
   - **Publish Video**: *"What got better with this video?"*, +100 XP, on the **Road to 100 Videos**. Editing time is logged as Focus hours in the Creator category, so input (hours) and output (videos) stay separate.
   - **Bögen**: a stepper for completed practice sheets, +10 XP each.
   - **Focus hours**: logged afterwards (no timer), by category, 25 XP per hour, minimum 15 min.
+  - **Clean Day**: a daily check-in for good behaviour (low social media, no gooning, good sleep times), +10 XP for each one kept, in the 🧘 Discipline skill. Saving again for the same day replaces it.
 - **Spanish streak with a Streak Shield:** missing one day uses the Shield and the streak survives. Missing again before it recharges (7 successful days) breaks only the current streak. Days, XP and entries are never lost.
-- **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, 6 a PERFECT WEEK with +200 bonus XP. Nothing is subtracted.
+- **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, all of them a PERFECT WEEK with +200 bonus XP. The Clean days mission counts from the week of your first check-in, so older weeks keep their stars. Nothing is subtracted.
 - **Achievements:** 39 Minecraft-style achievements with odd names, from easy (*Hello World*) to insane (*Are You Even Human?*: 12 focus hours in one day). Some need odd combinations, like lifting and swimming on the same day, or doing all six things in one day. Tap one to see what it takes.
 - **Progress:** focus first (today, week, month, lifetime, and a "road to 1,000 hours" per category), then 100 Days of Spanish with the streak and Shield (tap it for the full log: day, date, duration, what you learned), Road to 100 Videos (tap it for every video with its date), skills, your weeks or months (tap one for its stats and missions), and achievements.
 - **History:** every logged action by day. Tap ⋯ to remove a mistake.

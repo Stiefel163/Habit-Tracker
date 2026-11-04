@@ -25,6 +25,8 @@ export interface AchContext {
   activeRun: number;
   /** Came back after 7+ days without logging anything. */
   comeback: boolean;
+  /** Good-behaviour check-ins: days kept per item, and the longest runs. */
+  clean: { full: number; social: number; goon: number; sleep: number; run: number; goonRun: number; sleepRun: number };
   /** Local clock hour of each log, by kind, as it was logged. */
   hours: { kind: string; hour: number }[];
 }
@@ -62,6 +64,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "first-focus", icon: "🧠", name: "Big Brain Time", how: "Log your first focus session.", tier: 1, test: (c) => c.total.focusMin >= 15 },
   { id: "first-win", icon: "🍪", name: "Cookie Monster", how: "Put your first win in the cookie jar.", tier: 1, test: (c) => c.wins >= 1 },
 
+  { id: "clean-1", icon: "🌱", name: "Touch Grass", how: "Keep all three on one day: low social media, no gooning, good sleep.", tier: 1, test: (c) => c.clean.full >= 1 },
+
   // Medium: odd combos
   { id: "amphibian", icon: "🐊", name: "Amphibian", how: "Lift and swim on the same day.", tier: 2, test: (c) => anyDay(c, (d) => d.strength > 0 && d.swim > 0) },
   { id: "bilingual-biceps", icon: "💪", name: "Bilingual Biceps", how: "Train and do Spanish on the same day.", tier: 2, test: (c) => anyDay(c, (d) => d.strength > 0 && d.spanish > 0) },
@@ -77,9 +81,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "vampire", icon: "🧛", name: "Vampire Hours", how: "Log focus between midnight and 4 am.", tier: 2, test: (c) => c.hours.some((h) => h.kind === "focus" && h.hour < 4) },
   { id: "comeback", icon: "💀", name: "The Comeback", how: "Log something after a week or more of nothing. That's the whole point of this app.", tier: 2, test: (c) => c.comeback },
   { id: "perfect-1", icon: "⭐", name: "Overachiever", how: "Clear a perfect week: every mission done.", tier: 2, test: (c) => c.perfectWeeks >= 1 },
+  { id: "sleep-7", icon: "😴", name: "Sleep Is a Skill", how: "Keep good sleep times 7 days in a row.", tier: 2, test: (c) => c.clean.sleepRun >= 7 },
+  { id: "phone-who", icon: "📵", name: "Phone Who?", how: "Keep social media low on 30 days.", tier: 2, test: (c) => c.clean.social >= 30 },
   { id: "hustler", icon: "🕴", name: "Promoted", how: "Reach Level 10 and stop being a Crook.", tier: 2, test: (c) => c.level >= 10 },
 
   // Hard
+  { id: "monk-arc", icon: "🧘", name: "Monk Arc", how: "7 clean days in a row: all three kept, every day.", tier: 3, test: (c) => c.clean.run >= 7 },
+  { id: "no-goon-30", icon: "🗿", name: "Built Different", how: "No gooning for 30 days in a row.", tier: 3, test: (c) => c.clean.goonRun >= 30 },
   { id: "jackpot", icon: "🎰", name: "Jackpot", how: "Do all six things in one day: lift, swim, Spanish, a video, Bögen and focus.", tier: 3, test: (c) => anyDay(c, (d) => d.kinds >= 6) },
   { id: "brain-exe", icon: "🫠", name: "brain.exe Has Stopped", how: "Focus for 8 hours in one day.", tier: 3, test: (c) => anyDay(c, (d) => d.focusMin >= 480) },
   { id: "streak-30", icon: "🌶", name: "Muy Caliente", how: "Reach a 30-day Spanish streak.", tier: 3, test: (c) => c.bestStreak >= 30 },
@@ -92,6 +100,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "perfect-5", icon: "🌟", name: "Allergic to Losing", how: "Clear 5 perfect weeks.", tier: 3, test: (c) => c.perfectWeeks >= 5 },
 
   // Insane
+  { id: "monk-90", icon: "🏯", name: "Ascended", how: "90 clean days in a row. All three, every single day.", tier: 4, test: (c) => c.clean.run >= 90 },
   { id: "human", icon: "🤖", name: "Are You Even Human?", how: "Focus for 12 hours in one day.", tier: 4, test: (c) => anyDay(c, (d) => d.focusMin >= 720) },
   { id: "spanish-100", icon: "🇪🇸", name: "Basically Spanish Now", how: "Do 100 Spanish days.", tier: 4, test: (c) => c.total.spanish >= 100 },
   { id: "video-100", icon: "👑", name: "The Road Is Done", how: "Publish 100 videos.", tier: 4, test: (c) => c.total.videos >= 100 },

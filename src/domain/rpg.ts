@@ -14,6 +14,7 @@ export const XP = {
   video: 100,
   bogen: 10,
   focusPerHour: 25,
+  cleanEach: 10,
   perfectWeek: 200,
 } as const;
 
@@ -26,6 +27,7 @@ export const SKILLS: { id: SkillId; name: string; icon: string }[] = [
   { id: "creator", name: "Creator", icon: "🎬" },
   { id: "driving", name: "Driving Theory", icon: "🚗" },
   { id: "focus", name: "Focus", icon: "🧠" },
+  { id: "discipline", name: "Discipline", icon: "🧘" },
 ];
 
 export const SKILL_OF: Record<LogKind, SkillId> = {
@@ -35,6 +37,7 @@ export const SKILL_OF: Record<LogKind, SkillId> = {
   video: "creator",
   bogen: "driving",
   focus: "focus",
+  clean: "discipline",
 };
 
 export const SPLITS: { id: Split; label: string }[] = [
@@ -46,6 +49,14 @@ export const SPLITS: { id: Split; label: string }[] = [
   { id: "full", label: "Full Body" },
   { id: "other", label: "Other" },
 ];
+
+export const CLEAN_ITEMS = [
+  { id: "social", icon: "📵", label: "Low social media" },
+  { id: "goon", icon: "🚫", label: "No gooning" },
+  { id: "sleep", icon: "😴", label: "Good sleep times" },
+] as const;
+
+export const cleanCount = (l: { social: boolean; goon: boolean; sleep: boolean }) => Number(!!l.social) + Number(!!l.goon) + Number(!!l.sleep);
 
 export function xpOf(l: ActivityLog): number {
   switch (l.kind) {
@@ -61,6 +72,8 @@ export function xpOf(l: ActivityLog): number {
       return XP.bogen * Math.max(0, l.count);
     case "focus":
       return Math.round((Math.max(0, l.minutes) / 60) * XP.focusPerHour);
+    case "clean":
+      return XP.cleanEach * cleanCount(l);
   }
 }
 
@@ -71,7 +84,14 @@ export function xpOf(l: ActivityLog): number {
 export function validLogs(logs: ActivityLog[]): ActivityLog[] {
   const seen = new Set<string>();
   const out: ActivityLog[] = [];
+  // Clean-day check-ins: the latest one for a day is the one that counts.
+  const latestClean = new Map<string, string>();
+  for (const l of logs) if (l.kind === "clean") {
+    const prev = latestClean.get(l.date);
+    if (!prev || logs.find((x) => x.id === prev)!.at < l.at) latestClean.set(l.date, l.id);
+  }
   for (const l of [...logs].sort((a, b) => a.at.localeCompare(b.at))) {
+    if (l.kind === "clean" && latestClean.get(l.date) !== l.id) continue;
     if (l.kind === "strength" || l.kind === "swim" || l.kind === "spanish") {
       const k = `${l.kind}|${l.date}`;
       if (seen.has(k)) continue;
@@ -141,10 +161,12 @@ export interface WeekStats {
   videos: number;
   bogen: number;
   focusMin: number;
+  /** Days with all three good behaviours kept. */
+  clean: number;
 }
 
 export function statsFor(logs: ActivityLog[], days: Set<DayKey>): WeekStats {
-  const s: WeekStats = { strength: 0, swim: 0, spanish: 0, videos: 0, bogen: 0, focusMin: 0 };
+  const s: WeekStats = { strength: 0, swim: 0, spanish: 0, videos: 0, bogen: 0, focusMin: 0, clean: 0 };
   for (const l of logs) {
     if (!days.has(l.date)) continue;
     if (l.kind === "strength") s.strength++;
@@ -152,7 +174,8 @@ export function statsFor(logs: ActivityLog[], days: Set<DayKey>): WeekStats {
     else if (l.kind === "spanish") s.spanish++;
     else if (l.kind === "video") s.videos++;
     else if (l.kind === "bogen") s.bogen += l.count;
-    else s.focusMin += l.minutes;
+    else if (l.kind === "focus") s.focusMin += l.minutes;
+    else if (cleanCount(l) === 3) s.clean++;
   }
   return s;
 }
@@ -175,6 +198,7 @@ export function missionsFor(s: WeekStats, t: WeeklyTargets): WeeklyMission[] {
     { id: "videos", icon: "🎬", label: "Publish video", value: s.videos, target: t.videos, unit: "", complete: false },
     { id: "bogen", icon: "🚗", label: "Driving", value: s.bogen, target: t.bogen, unit: "Bögen", complete: false },
     { id: "focusHours", icon: "🧠", label: "Focus", value: Math.round((s.focusMin / 60) * 10) / 10, target: t.focusHours, unit: "h", complete: false },
+    { id: "clean", icon: "🧘", label: "Clean days", value: s.clean, target: t.clean, unit: "days", complete: false },
   ];
   return m.filter((x) => x.target > 0).map((x) => ({ ...x, complete: x.value >= x.target }));
 }
@@ -196,6 +220,9 @@ export function ratingOf(stars: number, total: number): string | null {
 }
 
 export function weekResult(logs: ActivityLog[], start: DayKey, t: WeeklyTargets): WeekResult {
+  // The clean-day mission only counts from the week you first checked in, so older weeks keep their stars.
+  const firstClean = logs.reduce<DayKey | null>((a, l) => (l.kind === "clean" && (!a || l.date < a) ? l.date : a), null);
+  if (!firstClean || start < weekStart(firstClean)) t = { ...t, clean: 0 };
   const missions = missionsFor(statsFor(logs, new Set(weekDays(start))), t);
   const stars = missions.filter((m) => m.complete).length;
   const perfect = missions.length > 0 && stars === missions.length;
@@ -294,6 +321,27 @@ export function achievementContext(data: AppData, today: DayKey, level = playerO
     activeRun = Math.max(activeRun, run);
     if (gap >= 8) comeback = true;
   });
+  const cleanLogs = logs.filter((l): l is Extract<ActivityLog, { kind: "clean" }> => l.kind === "clean").sort((a, b) => a.date.localeCompare(b.date));
+  const runOf = (ok: (l: (typeof cleanLogs)[number]) => boolean) => {
+    let best = 0;
+    let cur = 0;
+    let prev: DayKey | null = null;
+    for (const l of cleanLogs) {
+      cur = ok(l) ? (prev && dayGap(prev, l.date) === 1 && cur > 0 ? cur + 1 : 1) : 0;
+      best = Math.max(best, cur);
+      prev = l.date;
+    }
+    return best;
+  };
+  const clean = {
+    full: cleanLogs.filter((l) => cleanCount(l) === 3).length,
+    social: cleanLogs.filter((l) => l.social).length,
+    goon: cleanLogs.filter((l) => l.goon).length,
+    sleep: cleanLogs.filter((l) => l.sleep).length,
+    run: runOf((l) => cleanCount(l) === 3),
+    goonRun: runOf((l) => l.goon),
+    sleepRun: runOf((l) => l.sleep),
+  };
   const swimsPerWeek = new Map<DayKey, number>();
   for (const l of logs) if (l.kind === "swim") swimsPerWeek.set(weekStart(l.date), (swimsPerWeek.get(weekStart(l.date)) ?? 0) + 1);
   return {
@@ -306,6 +354,7 @@ export function achievementContext(data: AppData, today: DayKey, level = playerO
     level,
     activeRun,
     comeback,
+    clean,
     hours: logs.map((l) => ({ kind: l.kind, hour: new Date(l.at).getHours() })),
   };
 }
@@ -342,7 +391,7 @@ export interface Player {
 
 export function playerOf(data: AppData, today: DayKey): Player {
   const logs = validLogs(data.logs);
-  const skillXp: Record<SkillId, number> = { strength: 0, swimming: 0, spanish: 0, creator: 0, driving: 0, focus: 0 };
+  const skillXp: Record<SkillId, number> = { strength: 0, swimming: 0, spanish: 0, creator: 0, driving: 0, focus: 0, discipline: 0 };
   let focusMin = 0;
   for (const l of logs) {
     if (l.kind === "focus") focusMin += l.minutes;

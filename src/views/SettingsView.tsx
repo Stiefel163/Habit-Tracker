@@ -36,6 +36,7 @@ const TARGETS: { key: keyof WeeklyTargets; label: string; max: number }[] = [
   { key: "videos", label: "🎬 Published videos", max: 7 },
   { key: "bogen", label: "🚗 Bögen", max: 50 },
   { key: "focusHours", label: "🧠 Focus hours", max: 60 },
+  { key: "clean", label: "🧘 Clean days", max: 7 },
 ];
 
 export function SettingsView() {

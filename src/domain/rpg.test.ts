@@ -63,16 +63,17 @@ describe("weekly missions", () => {
     log({ kind: "bogen", date: "2026-11-03", count: 6 }),
     log({ kind: "bogen", date: "2026-11-07", count: 4 }),
     log({ kind: "focus", date: "2026-11-03", minutes: 600, category: "USask" }),
+    ...["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"].map((date) => log({ kind: "clean", date, social: true, goon: true, sleep: true })),
   ];
   it("counts stars and rates the week", () => {
     const r = weekResult(week.slice(0, 4), mon, emptyData().settings.targets);
     expect(r.stars).toBe(2);
     expect(r.rating).toBeNull();
     const full = weekResult(week, mon, emptyData().settings.targets);
-    expect(full).toMatchObject({ stars: 6, perfect: true, rating: "PERFECT WEEK" });
+    expect(full).toMatchObject({ stars: 7, perfect: true, rating: "PERFECT WEEK" });
   });
   it("a perfect week adds a 200 XP bonus; incomplete missions cost nothing", () => {
-    const base = 3 * 50 + 40 + 5 * 25 + 100 + 10 * 10 + 250;
+    const base = 3 * 50 + 40 + 5 * 25 + 100 + 10 * 10 + 250 + 5 * 30;
     expect(playerOf(withLogs(week), "2026-11-08").xp).toBe(base + 200);
     expect(playerOf(withLogs(week.slice(0, 3)), "2026-11-08").xp).toBe(150);
     expect(weekHistory(week, "2026-11-10", emptyData().settings.targets)[0].start).toBe("2026-11-09");
@@ -182,5 +183,28 @@ describe("achievements", () => {
   });
   it("has unique ids", () => {
     expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
+  });
+});
+
+describe("clean days", () => {
+  it("gives 10 XP per kept item and the latest check-in of a day wins", () => {
+    const d = "2026-11-02";
+    const first = log({ kind: "clean", date: d, social: true, goon: false, sleep: false, at: `${d}T20:00:00Z` });
+    const fixed = log({ kind: "clean", date: d, social: true, goon: true, sleep: true, at: `${d}T22:00:00Z` });
+    expect(playerOf(withLogs([first]), d).xp).toBe(10);
+    expect(playerOf(withLogs([fixed, first]), d).xp).toBe(30);
+    expect(validLogs([first, fixed])).toHaveLength(1);
+  });
+  it("doesn't take stars from weeks before the first check-in", () => {
+    const t = emptyData().settings.targets;
+    const old = weekResult([log({ kind: "strength", date: "2026-10-26" })], "2026-10-26", t);
+    expect(old.missions.some((m) => m.id === "clean")).toBe(false);
+    const later = [log({ kind: "strength", date: "2026-10-26" }), log({ kind: "clean", date: "2026-11-03", social: true, goon: true, sleep: true })];
+    expect(weekResult(later, "2026-10-26", t).missions.some((m) => m.id === "clean")).toBe(false);
+    expect(weekResult(later, "2026-11-02", t).missions.some((m) => m.id === "clean")).toBe(true);
+  });
+  it("counts only days with all three as clean days", () => {
+    const r = weekResult([log({ kind: "clean", date: "2026-11-02", social: true, goon: true, sleep: false })], "2026-11-02", emptyData().settings.targets);
+    expect(r.missions.find((m) => m.id === "clean")!.value).toBe(0);
   });
 });

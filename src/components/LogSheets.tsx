@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useStore } from "../data/StoreProvider";
-import { MIN_FOCUS_MIN, SPLITS, XP, formatDuration, formatHours, focusStats, journey, statsFor, validLogs } from "../domain/rpg";
+import { CLEAN_ITEMS, MIN_FOCUS_MIN, SPLITS, XP, cleanCount, formatDuration, formatHours, focusStats, journey, statsFor, validLogs } from "../domain/rpg";
 import type { ActivityLog, Split } from "../domain/types";
 import { addDays, weekDays, weekStart, type DayKey } from "../lib/date";
 import { useRewardedLog } from "./Reward";
 import { Sheet } from "./Sheet";
+import { useToast } from "./Toast";
 
-export type LogKindUI = "strength" | "swim" | "spanish" | "video" | "bogen" | "focus";
+export type LogKindUI = "strength" | "swim" | "spanish" | "video" | "bogen" | "focus" | "clean";
 
 /** Today or yesterday, for when you log late. Defaults to today. */
 function DayPick({ today, value, onChange }: { today: DayKey; value: DayKey; onChange: (d: DayKey) => void }) {
@@ -60,6 +61,8 @@ export function LogSheet({ kind, today, onClose }: { kind: LogKindUI; today: Day
       return <BogenSheet today={today} onClose={onClose} />;
     case "focus":
       return <FocusSheet today={today} onClose={onClose} />;
+    case "clean":
+      return <CleanSheet today={today} onClose={onClose} />;
   }
 }
 
@@ -369,6 +372,61 @@ function FocusSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
       <p className="muted small">
         Today {formatHours(stats.today)} · this week {formatHours(stats.week)} · lifetime {formatHours(stats.lifetime)}
       </p>
+    </Sheet>
+  );
+}
+
+/** Good behaviour: tap what you kept today. Saving again for the same day replaces it. */
+function CleanSheet({ today, onClose }: { today: DayKey; onClose: () => void }) {
+  const { data, updateLog } = useStore();
+  const reward = useRewardedLog();
+  const toast = useToast();
+  const [date, setDate] = useState(today);
+  const existing = onDay(data.logs, "clean", date) as Extract<ActivityLog, { kind: "clean" }> | undefined;
+  const [kept, setKept] = useState<Record<string, boolean> | null>(null);
+  const val = kept ?? { social: !!existing?.social, goon: !!existing?.goon, sleep: !!existing?.sleep };
+  const n = cleanCount(val as { social: boolean; goon: boolean; sleep: boolean });
+  const save = () => {
+    onClose();
+    const v = { social: !!val.social, goon: !!val.goon, sleep: !!val.sleep };
+    if (existing) {
+      updateLog(existing.id, v);
+      toast(n === 3 ? "Clean day updated 🧘" : `Updated · ${n} / 3`);
+    } else reward({ kind: "clean", date, ...v }, n === 3 ? "CLEAN DAY" : `${n} / 3 KEPT`, n === 3 ? "All three. That's the hard part." : undefined);
+  };
+  return (
+    <Sheet
+      title="🧘 Clean Day"
+      onClose={onClose}
+      footer={
+        <button className="primary" onClick={save}>
+          {existing ? "Update" : `Save · +${XP.cleanEach * n} XP`}
+        </button>
+      }
+    >
+      <DayPick
+        today={today}
+        value={date}
+        onChange={(d) => {
+          setDate(d);
+          setKept(null);
+        }}
+      />
+      <p className="field-label big">What did you keep?</p>
+      <ul className="clean-list">
+        {CLEAN_ITEMS.map((c) => (
+          <li key={c.id}>
+            <button className={`clean-item${val[c.id] ? " on" : ""}`} role="switch" aria-checked={!!val[c.id]} onClick={() => setKept({ ...val, [c.id]: !val[c.id] })}>
+              <span aria-hidden="true">{c.icon}</span>
+              <span>{c.label}</span>
+              <span className="clean-check" aria-hidden="true">
+                {val[c.id] ? "✓" : ""}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="muted small">Be honest, nobody else sees this. {XP.cleanEach} XP for each one you kept. Nothing is taken away for the rest.</p>
     </Sheet>
   );
 }

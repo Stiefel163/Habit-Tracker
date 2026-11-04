@@ -3,7 +3,7 @@ import { Bar } from "../components/Bar";
 import { LogSheet, type LogKindUI } from "../components/LogSheets";
 import { Sheet } from "../components/Sheet";
 import { useStore } from "../data/StoreProvider";
-import { MAX_LEVEL, RANKS, cookieJar, formatHours, journey, playerOf, playerXpToNext, spanishStreak, statsFor, validLogs, weekResult, type Cookie, type Player } from "../domain/rpg";
+import { MAX_LEVEL, RANKS, cleanCount, cookieJar, formatHours, journey, playerOf, playerXpToNext, spanishStreak, statsFor, validLogs, weekResult, type Cookie, type Player } from "../domain/rpg";
 import { formatShort, weekDays, weekStart, type DayKey } from "../lib/date";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -22,13 +22,16 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
   const spanishNext = journey(logs, "spanish").length + (streak.todayDone ? 0 : 1);
   const videoNext = journey(logs, "video").length + 1;
 
-  const quick: { kind: LogKindUI; icon: string; label: string; sub: string; done: boolean }[] = [
+  const cleanToday = logs.find((l) => l.kind === "clean" && l.date === today);
+  const cleanN = cleanToday && cleanToday.kind === "clean" ? cleanCount(cleanToday) : null;
+  const quick: { kind: LogKindUI; icon: string; label: string; sub: string; done: boolean; wide?: boolean }[] = [
     { kind: "strength", icon: "🦾", label: "Strength", sub: todayStats.strength ? "✓ today" : `${weekStats.strength} / ${s.targets.strength} this week`, done: !!todayStats.strength },
     { kind: "swim", icon: "🏊", label: "Swim", sub: todayStats.swim ? "✓ today" : `${weekStats.swim} / ${s.targets.swim} this week`, done: !!todayStats.swim },
     { kind: "spanish", icon: "🇪🇸", label: "Spanish Day", sub: streak.todayDone ? `✓ Day ${spanishNext}` : `Day ${spanishNext} / 100`, done: streak.todayDone },
     { kind: "video", icon: "🎬", label: "Publish Video", sub: `Next: #${videoNext}`, done: false },
     { kind: "bogen", icon: "🚗", label: "Bögen", sub: todayStats.bogen ? `${todayStats.bogen} today` : `${weekStats.bogen} / ${s.targets.bogen} this week`, done: false },
     { kind: "focus", icon: "🧠", label: "Focus Hours", sub: todayStats.focusMin ? `${formatHours(todayStats.focusMin)} today` : `${formatHours(weekStats.focusMin)} this week`, done: false },
+    { kind: "clean", icon: "🧘", label: "Clean Day", sub: cleanN === null ? `Social media · gooning · sleep · ${weekStats.clean} / ${s.targets.clean} this week` : `${cleanN === 3 ? "✓ " : ""}${cleanN} / 3 kept today · tap to change`, done: cleanN === 3, wide: true },
   ];
 
   return (
@@ -52,7 +55,7 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
         <h2 className="section-title">Quick log</h2>
         <ul className="quick">
           {quick.map((q) => (
-            <li key={q.kind}>
+            <li key={q.kind} className={q.wide ? "wide" : undefined}>
               <button className={`quick-btn${q.done ? " done" : ""}`} onClick={() => setOpen(q.kind)} aria-haspopup="dialog">
                 <span className="q-icon" aria-hidden="true">
                   {q.icon}

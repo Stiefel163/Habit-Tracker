@@ -3,7 +3,7 @@ import type { AppData, Settings } from "./types";
 export const DEFAULT_SETTINGS: Settings = {
   version: 3,
   dayStartHour: 4,
-  targets: { strength: 3, swim: 1, spanish: 5, videos: 1, bogen: 10, focusHours: 10 },
+  targets: { strength: 3, swim: 1, spanish: 5, videos: 1, bogen: 10, focusHours: 10, clean: 5 },
   shieldEvery: 7,
   focusCategories: ["USask", "Creator", "Spanish", "LATAM / Career", "Econometrics", "Tax", "Other"],
   vision: "",
