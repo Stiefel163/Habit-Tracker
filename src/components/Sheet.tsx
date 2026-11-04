@@ -1,7 +1,7 @@
 import { useEffect, useRef, type ReactNode } from "react";
 
-/** Bottom sheet. Closes on backdrop tap, Escape, or the Done button. Focus moves into it. */
-export function Sheet({ title, onClose, children, closeLabel = "Done" }: { title: string; onClose: () => void; children: ReactNode; closeLabel?: string }) {
+/** Bottom sheet. Closes on backdrop tap, Escape or ✕. Focus moves in and back out. */
+export function Sheet({ title, onClose, children, footer }: { title: ReactNode; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
@@ -22,11 +22,14 @@ export function Sheet({ title, onClose, children, closeLabel = "Done" }: { title
       <div className="sheet-backdrop" onClick={onClose} />
       <div className="sheet" ref={panel} tabIndex={-1}>
         <div className="sheet-handle" aria-hidden="true" />
-        <h2 id="sheet-title">{title}</h2>
+        <div className="sheet-head">
+          <h2 id="sheet-title">{title}</h2>
+          <button className="icon-btn small" onClick={onClose} aria-label="Close">
+            ✕
+          </button>
+        </div>
         <div className="sheet-body">{children}</div>
-        <button className="primary" onClick={onClose}>
-          {closeLabel}
-        </button>
+        {footer && <div className="sheet-foot">{footer}</div>}
       </div>
     </div>
   );

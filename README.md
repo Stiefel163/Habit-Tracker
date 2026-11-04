@@ -1,50 +1,56 @@
 # Comeback
 
-A personal, mobile-first habit tracker for an exchange semester, built to be **as lean as possible**: you only ever see the few things that matter right now.
+A real-life RPG. Productive real-world actions earn XP, level up skills, fill weekly missions and level up your character, from **Level 1 Crook** to **Level 100 Mafia Boss**.
 
-- **Modes (seasons):** 🎓 **Exam mode** (study 4×90 min, sleep on time, clean day), 🧱 **Build mode** (morning lock-in, training, study 2×60 min) and 🏔️ **Off-grid** (clean day, training). Switch in one tap; everything outside the mode's focus is paused, with no guilt. You can edit the focus (max 4) and the study blocks per mode.
-- **Today:** a tree that grows with your focus (study grows it block by block), 2–4 focus rows, an "Urge to scroll? Turn it into a rep" button, and "Did something else too?" to log anything outside your focus.
-- **Locked in** = all focus done. That's the one daily question.
-- **Progress:** Kanye eras as your level (*The College Dropout* → *Donda*, one step per locked-in day), a streak where a ❄️ forgives one missed day (never miss twice), a forest calendar with one tree per day, and Goggins' cookie jar.
-- **Adding habits back:** in Build mode, after 10 locked-in days out of the last 14, the app offers the next habit (supplements first, then driving theory, Spanish, create).
-- **Sunday check-in:** one optional line, "one change for next week", shown all week.
-- **Settings:** your clean-day rule (private, only "Clean day" shows on screen), fuel lines, phone setup checklist, habits, sports, appearance and backup.
+**Core loop:** do a real action → log it in a few seconds → get XP → level up a skill → progress weekly missions → level up your character.
+
+## What's in it
+
+- **Home:** level, rank and XP bar, your vision line, the Spanish streak with its 🛡 Streak Shield, weekly missions (⭐ per completed mission), quick log buttons and skill levels.
+- **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus.
+- **Quick logs** (each under 5 seconds):
+  - Strength workout (optional split and duration), +50 XP
+  - Swim (optional duration), +40 XP
+  - **Spanish Day**: one question, *"What got better today?"*, +25 XP. Max one per day. It counts toward **100 Days of Spanish**.
+  - **Publish Video**: *"What got better with this video?"*, +100 XP, on the **Road to 100 Videos**. Editing time is logged as Focus hours in the Creator category, so input (hours) and output (videos) stay separate.
+  - **Bögen**: a stepper for completed practice sheets, +10 XP each.
+  - **Focus hours**: logged afterwards (no timer), by category, 25 XP per hour, minimum 15 min.
+- **Spanish streak with a Streak Shield:** missing one day uses the Shield and the streak survives. Missing again before it recharges (7 successful days) breaks only the current streak. Days, XP and entries are never lost.
+- **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, 6 a PERFECT WEEK with +200 bonus XP. Nothing is subtracted.
+- **Achievements** come automatically from logged actions only.
+- **Progress:** player level and rank ladder, skills, 100 Days of Spanish and Road to 100 Videos (each with its full "what got better" journey), focus stats with a "road to 1,000 hours" per category, weekly history, achievements, and the cookie jar.
+- **History:** every logged action by day. Tap ⋯ to remove a mistake.
+- **Rewards:** XP count-up, a filling skill bar, level-up / rank-up / mission / milestone moments, and an optional subtle chime and vibration. No negative XP, no loot boxes, no shame screens.
+
+**Anti-gaming:** one workout, one swim and one Spanish day per calendar day. Focus XP comes from total time, so splitting a session earns nothing extra. Bögen count actual sheets.
 
 ## Run it
 
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm test             # domain tests (tree stages, goal counting, migration, day rollover)
-npm run build        # static site in dist/ (deploy to Vercel, Netlify or GitHub Pages)
+npm test             # game-rule tests (XP, levels, missions, streak shield, migration)
+npm run build        # static site in dist/ (GitHub Pages, Vercel, Netlify)
 npm run build:single # one self-contained HTML file in dist-single/
 ```
 
-On your phone, open the deployed URL and choose **Add to Home Screen**.
-
 ## Structure
 
-React 18 + TypeScript + Vite. There's no backend: data is saved in `localStorage` behind a two-method store interface.
+React 18 + TypeScript + Vite. Data lives in `localStorage` behind a two-method store interface (`load`, `save`), ready to swap for Supabase.
 
 ```
 src/
-  lib/date.ts        local days, 4:00 rollover, Monday weeks
-  domain/            types, habits, modes & focus (locked in, streak, eras, ladder), progress, migration   ← pure, tested
-  data/              DataStore interface, LocalStore, StoreProvider
-  components/        Tree (SVG), Sheet, Toast, Urge (urge → rep, phone setup list)
-  views/             Today, Progress (ForestView), Settings
-supabase/schema.sql  table for cloud sync later
-legacy/              the earlier pixel-forest prototype
+  lib/date.ts          local days, 4:00 rollover, Monday weeks
+  domain/types.ts      storage model: ActivityLog (Strength, Swim, SpanishDay, PublishedVideo, DrivingLog, FocusLog), Settings
+  domain/rpg.ts        game rules, all derived from logs: XP, Player, Skill, WeeklyMission, StreakState, Achievement, rewards
+  domain/migrate.ts    loads any earlier version and keeps the original under `legacy`
+  data/                DataStore, LocalStore, StoreProvider
+  components/          Sheet, Bar, Toast, Reward (overlay + chime), LogSheets (the six quick logs)
+  views/               Home, Progress, History, Settings
 ```
 
-**Data model:** `days["2025-10-08"] = { training: ["gym", "sport:Volleyball"], study: ["45", "30"], driving: ["pass", "fail"], spanish: ["done"], create: ["published"] }`. A habit is done when its list isn't empty. Data from the first, more detailed version is migrated automatically.
-
-**Adding Supabase later:** run `supabase/schema.sql`, implement `DataStore` (`load`, `save`) with `@supabase/supabase-js`, add a magic-link sign-in, and swap the one line in `StoreProvider.tsx`.
-
-## Accessibility
-
-17px base text, touch targets of at least 56px, and contrast that meets WCAG AA in dark and light mode. State is shown with text and a check mark, never color alone. Toggles use `aria-pressed`, goal bars are real `progressbar`s, sheets move focus in and out, and reduced motion is respected. Every screen passes an axe-core scan with zero violations.
+Levels, skills, missions, streaks and achievements are **computed from the activity log**, never stored. They can't drift out of sync, and changing a weekly target updates the whole history consistently.
 
 ## Backups
 
-Data lives only on the device: use **Settings → Backup** now and then.
+Data lives only on the device: use **Settings → Copy backup** now and then. To move to a new phone or address, paste the backup under **Settings → Backup**.

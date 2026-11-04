@@ -1,49 +1,69 @@
 import type { DayKey } from "../lib/date";
 
-export type HabitId = "sleep" | "noReels" | "reelFree" | "training" | "study" | "spanish" | "driving" | "create" | "supplements";
-
 /**
- * What happened on one day. A habit is "done" when its list has at least one item.
- * Simple habits store ["done"]; Training stores what you did (["gym", "sport:Volleyball"]);
- * Create stores ["worked"] and/or ["published"].
- * Study stores one entry per block in minutes (["90", "15"]).
- * Driving theory stores one entry per practice sheet (Bogen): ["pass", "fail"].
- * ("noReels" keeps its id for saved data; it is shown as "Morning lock-in".
- *  "reelFree" is shown as "Clean day".)
+ * Storage model. Everything the player does is one ActivityLog.
+ * Levels, skills, missions, streaks and achievements are *derived* from the logs
+ * (see rpg.ts), so they can never drift out of sync and can't be gamed.
  */
-export type DayLog = Partial<Record<HabitId, string[]>>;
 
-export type ModeId = "exam" | "build" | "offgrid";
+export type SkillId = "strength" | "swimming" | "spanish" | "creator" | "driving" | "focus";
 
-/** A season of life: which few things matter right now. Everything else is paused. */
-export interface Mode {
-  id: ModeId;
-  name: string;
-  icon: string;
-  why: string;
-  focus: HabitId[]; // max 4, usually 3
-  studyBlocks: number; // study target per day = blocks × blockMin
-  blockMin: number;
+export type Split = "push" | "pull" | "legs" | "upper" | "lower" | "full" | "other";
+
+interface BaseLog {
+  id: string;
+  date: DayKey; // the day it counts for
+  at: string; // ISO timestamp when it was logged
 }
 
-export interface Settings {
-  version: 2;
-  appearance: "system" | "dark" | "light";
-  dayStartHour: number;
-  active: Record<HabitId, boolean>;
-  sports: string[]; // your own activities, e.g. Volleyball
-  modes: Record<ModeId, Mode>;
-  /** When you switched modes. The mode on a day is the last switch on or before it. */
-  modeLog: { date: DayKey; mode: ModeId }[];
-  cleanRule: string; // what a clean day means to you
-  identity: string;
-  fuel: string[]; // your lines: lyrics, quotes, reminders. One shows per day.
-  setup: Record<string, boolean>; // one-time phone setup
+export interface StrengthLog extends BaseLog {
+  kind: "strength";
+  split?: Split;
+  minutes?: number;
 }
 
-/** The Sunday check-in: one optional line. Keyed by the week's Monday. */
-export interface Review {
-  change: string;
+export interface SwimLog extends BaseLog {
+  kind: "swim";
+  minutes?: number;
+}
+
+/** One completed Spanish day. Max one per calendar day. */
+export interface SpanishDay extends BaseLog {
+  kind: "spanish";
+  better: string; // "What got better today?"
+  minutes?: number;
+}
+
+/** One published video on the Road to 100. */
+export interface PublishedVideo extends BaseLog {
+  kind: "video";
+  better: string; // "What got better with this video?"
+  title?: string;
+}
+
+/** Completed practice sheets (Bögen). */
+export interface DrivingLog extends BaseLog {
+  kind: "bogen";
+  count: number;
+}
+
+/** Focused work, logged afterwards. XP is proportional to time. */
+export interface FocusLog extends BaseLog {
+  kind: "focus";
+  minutes: number;
+  category: string;
+}
+
+export type ActivityLog = StrengthLog | SwimLog | SpanishDay | PublishedVideo | DrivingLog | FocusLog;
+export type LogKind = ActivityLog["kind"];
+
+export interface WeeklyTargets {
+  strength: number;
+  swim: number;
+  spanish: number; // days
+  videos: number;
+  bogen: number;
+  focusHours: number;
 }
 
 export interface Win {
@@ -51,13 +71,22 @@ export interface Win {
   text: string;
 }
 
+export interface Settings {
+  version: 3;
+  dayStartHour: number;
+  targets: WeeklyTargets;
+  shieldEvery: number; // successful Spanish days to recharge the Streak Shield
+  focusCategories: string[];
+  vision: string; // why you do this (shown on Home)
+  sound: boolean; // sound + haptics on rewards
+}
+
 export interface AppData {
-  version: 2;
-  days: Record<DayKey, DayLog>;
-  /** Urges you beat, per day: what you turned each one into ("study", "walk", "passed" …). */
-  urges: Record<DayKey, string[]>;
-  /** The cookie jar: wins you wrote down to remember on hard days. */
+  version: 3;
+  logs: ActivityLog[];
+  /** The cookie jar: wins you wrote down yourself (trips, the scholarship …). */
   wins: Win[];
-  reviews: Record<DayKey, Review>;
   settings: Settings;
+  /** Untouched data from earlier app versions, kept so nothing is ever lost. */
+  legacy?: unknown;
 }

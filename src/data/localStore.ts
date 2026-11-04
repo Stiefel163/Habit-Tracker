@@ -3,13 +3,14 @@ import { normalize } from "../domain/migrate";
 import type { AppData } from "../domain/types";
 import type { DataStore } from "./store";
 
-const KEY = "comeback:v2";
-const OLD_KEY = "comeback:v1";
+const KEY = "comeback:v3";
+const OLD_KEYS = ["comeback:v2", "comeback:v1"];
 
 export class LocalStore implements DataStore {
   async load(): Promise<AppData> {
     try {
-      const raw = localStorage.getItem(KEY) ?? localStorage.getItem(OLD_KEY);
+      // Older versions stay untouched under their own keys, so a migration can never destroy them.
+      const raw = localStorage.getItem(KEY) ?? OLD_KEYS.map((k) => localStorage.getItem(k)).find(Boolean);
       if (raw) return normalize(JSON.parse(raw));
     } catch {
       // Storage blocked or unreadable: start fresh instead of crashing.

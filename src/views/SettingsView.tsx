@@ -2,10 +2,8 @@ import { useRef, useState, type ReactNode } from "react";
 import { useToast } from "../components/Toast";
 import { useStore } from "../data/StoreProvider";
 import { emptyData } from "../domain/defaults";
-import { HABITS } from "../domain/habits";
-import { SETUP } from "../components/Urge";
 import { normalize } from "../domain/migrate";
-import type { Settings } from "../domain/types";
+import type { Settings, WeeklyTargets } from "../domain/types";
 
 function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
@@ -17,24 +15,49 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
   );
 }
 
-function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+function Stepper({ label, value, onChange, min, max, step = 1 }: { label: string; value: number; onChange: (v: number) => void; min: number; max: number; step?: number }) {
   return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`switch${checked ? " on" : ""}`} onClick={() => onChange(!checked)}>
-      <span />
-    </button>
+    <div className="stepper">
+      <button type="button" aria-label={`Lower ${label}`} disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))}>
+        −
+      </button>
+      <output aria-label={label}>{value}</output>
+      <button type="button" aria-label={`Raise ${label}`} disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))}>
+        +
+      </button>
+    </div>
   );
 }
+
+const TARGETS: { key: keyof WeeklyTargets; label: string; max: number }[] = [
+  { key: "strength", label: "🦾 Strength workouts", max: 7 },
+  { key: "swim", label: "🏊 Swims", max: 7 },
+  { key: "spanish", label: "🇪🇸 Spanish days", max: 7 },
+  { key: "videos", label: "🎬 Published videos", max: 7 },
+  { key: "bogen", label: "🚗 Bögen", max: 50 },
+  { key: "focusHours", label: "🧠 Focus hours", max: 60 },
+];
 
 export function SettingsView() {
   const { data, updateSettings, replaceAll } = useStore();
   const toast = useToast();
   const s = data.settings;
   const set = (patch: Partial<Settings>) => updateSettings((x) => ({ ...x, ...patch }));
-  const [sport, setSport] = useState("");
-  const [line, setLine] = useState("");
+  const [cat, setCat] = useState("");
+  const [paste, setPaste] = useState("");
   const [confirmErase, setConfirmErase] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const json = JSON.stringify(data);
+
+  const restore = (text: string) => {
+    try {
+      replaceAll(normalize(JSON.parse(text)));
+      toast("Backup restored");
+      setPaste("");
+    } catch {
+      toast("That isn't a Comeback backup. Paste the whole copied text.");
+    }
+  };
 
   return (
     <div className="view">
@@ -42,120 +65,61 @@ export function SettingsView() {
         <h1>Settings</h1>
       </header>
 
-      <Section title="Who you're becoming" hint="Shown on Progress. Every locked-in day is a vote for this.">
-        <input
-          className="text-input"
-          value={s.identity}
-          onChange={(e) => set({ identity: e.target.value })}
-          aria-label="Identity statement"
-          maxLength={80}
-        />
+      <Section title="Your vision" hint="Why you're doing this, in your own words. Shown on Home. Read it when you doubt yourself.">
+        <textarea className="text-input area" rows={3} value={s.vision} onChange={(e) => set({ vision: e.target.value })} placeholder="Jim Goes: travel videos my way, not like every other travel account." aria-label="Your vision" maxLength={240} />
       </Section>
 
-      <Section title="Your fuel" hint="Lines that fire you up: lyrics, quotes, reminders. One shows each day.">
-        {s.fuel.map((f, i) => (
-          <div className="row" key={i}>
-            <span className="fuel-item">“{f}”</span>
-            <button className="text-btn" onClick={() => set({ fuel: s.fuel.filter((_, j) => j !== i) })} aria-label={`Remove line: ${f}`}>
-              Remove
-            </button>
-          </div>
-        ))}
-        <form
-          className="add-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const t = line.trim();
-            if (t) set({ fuel: [...s.fuel, t] });
-            setLine("");
-          }}
-        >
-          <input className="text-input" value={line} onChange={(e) => setLine(e.target.value)} placeholder="Your favorite line" aria-label="New fuel line" maxLength={140} />
-          <button className="secondary" type="submit">
-            Add
-          </button>
-        </form>
-      </Section>
-
-      <Section title="Clean day" hint="Your rule. Only “Clean day” shows on the screen, so it stays private.">
-        <textarea
-          className="text-input area"
-          rows={3}
-          value={s.cleanRule}
-          onChange={(e) => set({ cleanRule: e.target.value })}
-          aria-label="What a clean day means to you"
-          maxLength={200}
-        />
-      </Section>
-
-      <Section title="Phone setup" hint="Set up once, so you need willpower less often. Tap a step when it's done.">
-        <ul className="setup">
-          {SETUP.map((x) => {
-            const on = !!s.setup[x.id];
-            return (
-              <li key={x.id}>
-                <button className={`setup-item${on ? " on" : ""}`} aria-pressed={on} onClick={() => set({ setup: { ...s.setup, [x.id]: !on } })}>
-                  <span className="check" aria-hidden="true">
-                    {on ? "✓" : ""}
-                  </span>
-                  <span>
-                    <strong>{x.title}</strong>
-                    <span className="muted small">{x.how}</span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </Section>
-
-      <Section title="Habits" hint="Turn off what you don't need right now. Your history stays.">
-        {HABITS.map((h) => (
-          <div className="row" key={h.id}>
-            <span>
-              <span aria-hidden="true">{h.icon}</span> {h.name}
-            </span>
-            <Switch checked={s.active[h.id]} label={h.name} onChange={(v) => set({ active: { ...s.active, [h.id]: v } })} />
+      <Section title="Weekly missions" hint="A new week starts every Monday. Completing a mission gives a star. Nothing is ever taken away.">
+        {TARGETS.map((t) => (
+          <div className="row" key={t.key}>
+            <span>{t.label}</span>
+            <Stepper label={t.label} value={s.targets[t.key]} min={0} max={t.max} onChange={(v) => set({ targets: { ...s.targets, [t.key]: v } })} />
           </div>
         ))}
       </Section>
 
-      <Section title="Your sports" hint="Shown when you tap Training. Gym and swimming are always there.">
-        {s.sports.map((name) => (
-          <div className="row" key={name}>
-            <span>🏐 {name}</span>
-            <button className="text-btn" onClick={() => set({ sports: s.sports.filter((x) => x !== name) })} aria-label={`Remove ${name}`}>
-              Remove
-            </button>
-          </div>
-        ))}
-        <form
-          className="add-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const n = sport.trim();
-            if (n && !s.sports.includes(n)) set({ sports: [...s.sports, n] });
-            setSport("");
-          }}
-        >
-          <input className="text-input" value={sport} onChange={(e) => setSport(e.target.value)} placeholder="e.g. Hiking" aria-label="New sport" maxLength={24} />
-          <button className="secondary" type="submit">
-            Add
-          </button>
-        </form>
-      </Section>
-
-      <Section title="Appearance">
-        <div className="seg" role="radiogroup" aria-label="Appearance">
-          {(["system", "dark", "light"] as const).map((a) => (
-            <button key={a} role="radio" aria-checked={s.appearance === a} className={s.appearance === a ? "on" : ""} onClick={() => set({ appearance: a })}>
-              {a[0].toUpperCase() + a.slice(1)}
-            </button>
-          ))}
+      <Section title="Streak Shield" hint="Missing one Spanish day uses the Shield and your streak survives. It recharges after this many successful days.">
+        <div className="row">
+          <span>🛡 Recharge after</span>
+          <Stepper label="days to recharge the shield" value={s.shieldEvery} min={3} max={14} onChange={(v) => set({ shieldEvery: v })} />
         </div>
       </Section>
 
-      <Section title="Backup" hint="Your data lives only on this device. Copy a backup now and then.">
+      <Section title="Focus categories">
+        {s.focusCategories.map((c) => (
+          <div className="row" key={c}>
+            <span>{c}</span>
+            <button className="text-btn" onClick={() => set({ focusCategories: s.focusCategories.filter((x) => x !== c) })} aria-label={`Remove ${c}`}>
+              Remove
+            </button>
+          </div>
+        ))}
+        <form
+          className="add-row"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const c = cat.trim();
+            if (c && !s.focusCategories.includes(c)) set({ focusCategories: [...s.focusCategories, c] });
+            setCat("");
+          }}
+        >
+          <input className="text-input" value={cat} onChange={(e) => setCat(e.target.value)} placeholder="New category" aria-label="New focus category" maxLength={24} />
+          <button className="secondary" type="submit">
+            Add
+          </button>
+        </form>
+      </Section>
+
+      <Section title="Feedback">
+        <div className="row">
+          <span>Sound & vibration on rewards</span>
+          <button type="button" role="switch" aria-checked={s.sound} aria-label="Sound and vibration" className={`switch${s.sound ? " on" : ""}`} onClick={() => set({ sound: !s.sound })}>
+            <span />
+          </button>
+        </div>
+      </Section>
+
+      <Section title="Backup" hint="Your data lives only on this device. Copy a backup now and then, and paste it here to move to a new phone or address.">
         <div className="btn-row">
           <button
             className="secondary"
@@ -190,17 +154,17 @@ export function SettingsView() {
             hidden
             onChange={async (e) => {
               const f = e.target.files?.[0];
-              if (!f) return;
-              try {
-                replaceAll(normalize(JSON.parse(await f.text())));
-                toast("Backup restored");
-              } catch {
-                toast("That file isn't a Comeback backup.");
-              }
+              if (f) restore(await f.text());
               e.target.value = "";
             }}
           />
         </div>
+        <textarea className="text-input area" rows={2} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Or paste a copied backup here" aria-label="Paste a backup" />
+        {paste.trim() && (
+          <button className="secondary" onClick={() => restore(paste)}>
+            Restore pasted backup
+          </button>
+        )}
         {confirmErase ? (
           <div className="btn-row">
             <button
@@ -218,7 +182,7 @@ export function SettingsView() {
             </button>
           </div>
         ) : (
-          <button className="text-btn" onClick={() => setConfirmErase(true)}>
+          <button className="text-btn left" onClick={() => setConfirmErase(true)}>
             Erase all data…
           </button>
         )}
