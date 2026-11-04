@@ -6,7 +6,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
 
 ## What's in it
 
-- **Home:** level, rank and XP bar, your vision line, a **cookie jar card** that always shows one thing you've already done (tap *Another one ↻* for a random other), the Spanish streak with its 🛡 Streak Shield, weekly missions (⭐ per completed mission), quick log buttons and skill levels.
+- **Home (slim):** level card (tap it for the rank ladder and the XP to the next level and rank), quick log at the top, your vision line, a **cookie jar card** with one thing you've already done (tap it to see the whole jar in random order and add a win; *Another one ↻* shows a random other), and weekly missions at the bottom.
 - **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus.
 - **Quick logs** (each under 5 seconds):
   - Strength workout (optional split and duration), +50 XP
@@ -18,7 +18,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
 - **Spanish streak with a Streak Shield:** missing one day uses the Shield and the streak survives. Missing again before it recharges (7 successful days) breaks only the current streak. Days, XP and entries are never lost.
 - **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, 6 a PERFECT WEEK with +200 bonus XP. Nothing is subtracted.
 - **Achievements** come automatically from logged actions only.
-- **Progress:** player level and rank ladder, skills, 100 Days of Spanish and Road to 100 Videos (each with its full "what got better" journey), focus stats with a "road to 1,000 hours" per category, weekly history, achievements, and the cookie jar.
+- **Progress:** skills, 100 Days of Spanish with the streak and Shield (tap for the full log: day, date, duration, what you learned), Road to 100 Videos (tap for every video with date), focus stats with a "road to 1,000 hours" per category, weekly history and achievements.
 - **History:** every logged action by day. Tap ⋯ to remove a mistake.
 - **Rewards:** XP count-up, a filling skill bar, level-up / rank-up / mission / milestone moments, and an optional subtle chime and vibration. No negative XP, no loot boxes, no shame screens.
 

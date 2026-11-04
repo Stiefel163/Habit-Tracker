@@ -1,14 +1,18 @@
 import { useMemo, useState } from "react";
 import { Bar } from "../components/Bar";
 import { LogSheet, type LogKindUI } from "../components/LogSheets";
+import { Sheet } from "../components/Sheet";
 import { useStore } from "../data/StoreProvider";
-import { cookieJar, formatHours, journey, playerOf, spanishStreak, statsFor, validLogs, weekResult } from "../domain/rpg";
+import { MAX_LEVEL, RANKS, cookieJar, formatHours, journey, playerOf, playerXpToNext, spanishStreak, statsFor, validLogs, weekResult, type Cookie, type Player } from "../domain/rpg";
 import { formatShort, weekDays, weekStart, type DayKey } from "../lib/date";
 
-export function HomeView({ today, goSettings, goProgress }: { today: DayKey; goSettings: () => void; goProgress: () => void }) {
+const fmt = (n: number) => n.toLocaleString("en-US");
+
+export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () => void }) {
   const { data } = useStore();
   const s = data.settings;
   const [open, setOpen] = useState<LogKindUI | null>(null);
+  const [playerOpen, setPlayerOpen] = useState(false);
   const logs = useMemo(() => validLogs(data.logs), [data.logs]);
   const player = useMemo(() => playerOf(data, today), [data, today]);
   const streak = spanishStreak(logs, today, s.shieldEvery);
@@ -29,42 +33,47 @@ export function HomeView({ today, goSettings, goProgress }: { today: DayKey; goS
 
   return (
     <div className="view">
-      <section className="player" aria-label="Your character">
-        <p className="level">LEVEL {player.level}</p>
-        <h1 className="rank">{player.rank}</h1>
-        <Bar value={player.progress} label={`Level ${player.level}: ${player.into} of ${player.need} XP`} />
-        <p className="xp-line">
-          <span>
-            {player.into.toLocaleString("en-US")} / {player.need.toLocaleString("en-US")} XP
-          </span>
-          <span className="muted">{player.xp.toLocaleString("en-US")} total</span>
-        </p>
-        {s.vision ? (
-          <p className="vision">“{s.vision}”</p>
-        ) : (
-          <button className="text-btn left" onClick={goSettings}>
-            Write down your vision ›
-          </button>
-        )}
-      </section>
-
-      <CookieCard today={today} goProgress={goProgress} />
-
-      <section className={`streak${streak.current ? " lit" : ""}`} aria-label="Spanish streak">
-        <span className="flame" aria-hidden="true">
-          🔥
+      <button className="player tap" onClick={() => setPlayerOpen(true)} aria-haspopup="dialog" aria-label={`Level ${player.level} ${player.rank}. Show what comes next`}>
+        <span className="player-top">
+          <span className="level">LEVEL {player.level}</span>
+          <span className="muted small">Next ›</span>
         </span>
-        <div className="streak-main">
-          <p className="streak-num">
-            {streak.current} <span>{streak.current === 1 ? "day" : "days"}</span>
-          </p>
-          <p className="muted small">🇪🇸 Spanish streak · best {streak.best}</p>
-        </div>
-        <div className={`shield${streak.shield ? " on" : ""}`}>
-          <span aria-hidden="true">🛡</span>
-          <span className="small">{streak.shield ? "Shield ready" : `Back in ${streak.toRecharge}`}</span>
-        </div>
+        <span className="rank">{player.rank}</span>
+        <Bar value={player.progress} label={`Level ${player.level}: ${player.into} of ${player.need} XP`} />
+        <span className="xp-line">
+          <span>
+            {fmt(player.into)} / {fmt(player.need)} XP
+          </span>
+          <span className="muted">{fmt(player.xp)} total</span>
+        </span>
+      </button>
+
+      <section aria-label="Quick log">
+        <h2 className="section-title">Quick log</h2>
+        <ul className="quick">
+          {quick.map((q) => (
+            <li key={q.kind}>
+              <button className={`quick-btn${q.done ? " done" : ""}`} onClick={() => setOpen(q.kind)} aria-haspopup="dialog">
+                <span className="q-icon" aria-hidden="true">
+                  {q.icon}
+                </span>
+                <span className="q-label">+ {q.label}</span>
+                <span className="q-sub">{q.sub}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
       </section>
+
+      {s.vision ? (
+        <p className="vision">“{s.vision}”</p>
+      ) : (
+        <button className="text-btn left" onClick={goSettings}>
+          Write down your vision ›
+        </button>
+      )}
+
+      <CookieCard today={today} />
 
       <section className="panel">
         <div className="panel-head">
@@ -90,48 +99,74 @@ export function HomeView({ today, goSettings, goProgress }: { today: DayKey; goS
         </ul>
       </section>
 
-      <section aria-label="Quick log">
-        <h2 className="section-title">Quick log</h2>
-        <ul className="quick">
-          {quick.map((q) => (
-            <li key={q.kind}>
-              <button className={`quick-btn${q.done ? " done" : ""}`} onClick={() => setOpen(q.kind)} aria-haspopup="dialog">
-                <span className="q-icon" aria-hidden="true">
-                  {q.icon}
-                </span>
-                <span className="q-label">+ {q.label}</span>
-                <span className="q-sub">{q.sub}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="panel">
-        <h2 className="section-title">Skills</h2>
-        <ul className="skills">
-          {player.skills.map((k) => (
-            <li key={k.id}>
-              <span className="sk-name">
-                <span aria-hidden="true">{k.icon}</span> {k.name}
-              </span>
-              <span className="sk-lv">Lv {k.level}</span>
-              <Bar value={k.progress} label={`${k.name} level ${k.level}: ${k.into} of ${k.need} XP`} thin />
-            </li>
-          ))}
-        </ul>
-      </section>
-
       {open && <LogSheet kind={open} today={today} onClose={() => setOpen(null)} />}
+      {playerOpen && <PlayerSheet player={player} onClose={() => setPlayerOpen(false)} />}
     </div>
   );
 }
 
-/** One thing you already did, every time you open the app. Tap for another. */
-function CookieCard({ today, goProgress }: { today: DayKey; goProgress: () => void }) {
+/** XP still needed to get from the current state to `level`. */
+function xpToLevel(p: Player, level: number) {
+  let need = p.need - p.into;
+  for (let l = p.level + 1; l < level; l++) need += playerXpToNext(l);
+  return need;
+}
+
+function PlayerSheet({ player, onClose }: { player: Player; onClose: () => void }) {
+  const nextRank = RANKS.find((r) => r.from > player.level);
+  return (
+    <Sheet title={`Level ${player.level} · ${player.rank}`} onClose={onClose}>
+      {player.level < MAX_LEVEL && (
+        <div className="mini-stats two">
+          <div>
+            <strong>{fmt(player.need - player.into)} XP</strong>
+            <span>to level {player.level + 1}</span>
+          </div>
+          {nextRank && (
+            <div>
+              <strong>{fmt(xpToLevel(player, nextRank.from))} XP</strong>
+              <span>
+                to {nextRank.name} (Lv {nextRank.from})
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      <ol className="ranks">
+        {RANKS.map((r, i) => {
+          const to = RANKS[i + 1] ? RANKS[i + 1].from - 1 : MAX_LEVEL;
+          const state = player.level >= r.from && player.level <= to ? "current" : player.level > to ? "past" : "future";
+          return (
+            <li key={r.name} className={state} aria-current={state === "current" ? "step" : undefined}>
+              <span>
+                {state === "past" ? "✓ " : ""}
+                {r.name}
+              </span>
+              <span className="small">{r.from === to ? `Lv ${r.from}` : `Lv ${r.from}–${to}`}</span>
+            </li>
+          );
+        })}
+      </ol>
+      <p className="muted small">{fmt(player.xp)} XP total. Every real action counts, nothing is ever taken away.</p>
+    </Sheet>
+  );
+}
+
+function shuffle<T>(a: T[]): T[] {
+  const b = [...a];
+  for (let i = b.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [b[i], b[j]] = [b[j], b[i]];
+  }
+  return b;
+}
+
+/** One thing you already did, every time you open the app. Tap it to see the whole jar. */
+function CookieCard({ today }: { today: DayKey }) {
   const { data } = useStore();
   const jar = useMemo(() => cookieJar(data, today), [data, today]);
   const [pick, setPick] = useState(() => Math.random());
+  const [all, setAll] = useState<Cookie[] | null>(null);
   const idx = jar.length ? Math.floor(pick * jar.length) % jar.length : -1;
   const c = idx >= 0 ? jar[idx] : null;
 
@@ -141,37 +176,87 @@ function CookieCard({ today, goProgress }: { today: DayKey; goProgress: () => vo
     while (Math.floor(n * jar.length) === idx) n = Math.random();
     setPick(n);
   };
+  const openJar = () => setAll(shuffle(jar));
 
-  if (!c) {
-    return (
-      <section className="cookie empty" aria-label="Cookie jar">
-        <p className="cookie-tag">🍪 Cookie jar</p>
-        <p>Your wins land here. Start with one you already earned, like the scholarship.</p>
-        <button className="text-btn left" onClick={goProgress}>
-          Add a win ›
-        </button>
-      </section>
-    );
-  }
   return (
-    <section className="cookie" aria-label="Cookie jar">
-      <div className="cookie-body" key={c.key} aria-live="polite">
-        <p className="cookie-tag">
-          {c.tag}
-          {c.date && <span> · {formatShort(c.date)}</span>}
-        </p>
-        <p className="cookie-text">{c.text}</p>
-      </div>
-      <div className="cookie-actions">
-        <button className="text-btn left" onClick={goProgress}>
-          {jar.length} in the jar ›
-        </button>
-        {jar.length > 1 && (
-          <button className="secondary small-btn" onClick={another}>
-            Another one ↻
+    <>
+      {c ? (
+        <section className="cookie" aria-label="Cookie jar">
+          <button className="cookie-body" key={c.key} onClick={openJar} aria-haspopup="dialog" aria-live="polite">
+            <span className="cookie-tag">
+              <span>
+                {c.tag}
+                {c.date && <span className="muted"> · {formatShort(c.date)}</span>}
+              </span>
+              <span className="muted" aria-label={`${jar.length} in the jar, show all`}>
+                🍪 {jar.length} ›
+              </span>
+            </span>
+            <span className="cookie-text">{c.text}</span>
           </button>
-        )}
-      </div>
-    </section>
+          {jar.length > 1 && (
+            <button className="secondary small-btn" onClick={another}>
+              Another one ↻
+            </button>
+          )}
+        </section>
+      ) : (
+        <section className="cookie empty" aria-label="Cookie jar">
+          <p className="cookie-tag">🍪 Cookie jar</p>
+          <p>Your wins land here. Start with one you already earned, like the scholarship.</p>
+          <button className="text-btn left" onClick={openJar}>
+            Add a win ›
+          </button>
+        </section>
+      )}
+      {all && <JarSheet items={all} today={today} onClose={() => setAll(null)} />}
+    </>
+  );
+}
+
+function JarSheet({ items, today, onClose }: { items: Cookie[]; today: DayKey; onClose: () => void }) {
+  const { update } = useStore();
+  const [win, setWin] = useState("");
+  const [added, setAdded] = useState<Cookie[]>([]);
+  const shown = [...added, ...items];
+  return (
+    <Sheet
+      title={
+        <>
+          Cookie jar 🍪 <span className="of">{shown.length}</span>
+        </>
+      }
+      onClose={onClose}
+    >
+      <form
+        className="add-row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const text = win.trim();
+          if (!text) return;
+          update((d) => ({ ...d, wins: [...d.wins, { date: today, text }] }));
+          setAdded((a) => [{ key: `new-${a.length}`, date: today, tag: "🍪 Your win", text }, ...a]);
+          setWin("");
+        }}
+      >
+        <input className="text-input" value={win} onChange={(e) => setWin(e.target.value)} placeholder="Add a win, e.g. Got the scholarship" aria-label="Add a win" maxLength={120} />
+        <button className="secondary" type="submit">
+          Add
+        </button>
+      </form>
+      <ul className="jar">
+        {shown.map((x) => (
+          <li key={x.key}>
+            <span className="cookie-tag">
+              <span>
+                {x.tag}
+                {x.date && <span className="muted"> · {formatShort(x.date)}</span>}
+              </span>
+            </span>
+            <span className="jar-text">{x.text}</span>
+          </li>
+        ))}
+      </ul>
+    </Sheet>
   );
 }

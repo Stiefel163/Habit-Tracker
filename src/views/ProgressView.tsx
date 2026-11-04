@@ -1,12 +1,12 @@
 import { useMemo, useState } from "react";
 import { Bar } from "../components/Bar";
+import { Sheet } from "../components/Sheet";
 import { useStore } from "../data/StoreProvider";
 import {
   ACHIEVEMENTS,
-  RANKS,
-  cookieJar,
   VIDEO_MILESTONES,
   focusStats,
+  formatDuration,
   formatHours,
   journey,
   masteryOf,
@@ -17,12 +17,12 @@ import {
   validLogs,
   weekHistory,
 } from "../domain/rpg";
-import { addDays, formatShort, weekDays, type DayKey } from "../lib/date";
+import { addDays, formatLong, formatShort, weekDays, type DayKey } from "../lib/date";
 
 const plural = (n: number, word: string) => `${n} ${n === 1 ? word : word + "s"}`;
 
 export function ProgressView({ today }: { today: DayKey }) {
-  const { data, update } = useStore();
+  const { data } = useStore();
   const s = data.settings;
   const logs = useMemo(() => validLogs(data.logs), [data.logs]);
   const player = useMemo(() => playerOf(data, today), [data, today]);
@@ -38,15 +38,10 @@ export function ProgressView({ today }: { today: DayKey }) {
     return logs.filter((l) => l.kind === kind && since.has(l.date)).length;
   };
   const [openJourney, setOpenJourney] = useState<"spanish" | "video" | null>(null);
-  const [allRanks, setAllRanks] = useState(false);
-  const rankIdx = RANKS.reduce((a, r, i) => (player.level >= r.from ? i : a), 0);
-  const shownRanks = allRanks ? RANKS.map((_, i) => i) : [...new Set([rankIdx, Math.min(rankIdx + 1, RANKS.length - 1), RANKS.length - 1])];
   // Unlocked achievements, plus the next one to chase in each skill.
   const nextPerMetric = new Set<string>();
   for (const a of ACHIEVEMENTS) if (!unlocked.has(a.id) && ![...nextPerMetric].some((id) => ACHIEVEMENTS.find((x) => x.id === id)!.metric === a.metric)) nextPerMetric.add(a.id);
   const shownAchievements = ACHIEVEMENTS.filter((a) => unlocked.has(a.id) || nextPerMetric.has(a.id));
-  const [win, setWin] = useState("");
-  const jar = cookieJar(data, today).sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
 
   const skillStat: Record<string, string> = {
     strength: `${plural(t.strength, "workout")} · ${recent("strength")} in 4 weeks`,
@@ -63,30 +58,6 @@ export function ProgressView({ today }: { today: DayKey }) {
         <h1>Progress</h1>
         <p className="muted">The work that's making the person you're becoming.</p>
       </header>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2 className="section-title">Level {player.level} · {player.rank}</h2>
-          <span className="muted small">{player.xp.toLocaleString("en-US")} XP</span>
-        </div>
-        <Bar value={player.progress} label={`Level progress ${Math.round(player.progress * 100)}%`} />
-        <ol className="ranks">
-          {shownRanks.map((i) => {
-            const r = RANKS[i];
-            const to = RANKS[i + 1] ? RANKS[i + 1].from - 1 : 100;
-            const state = player.level >= r.from && player.level <= to ? "current" : player.level > to ? "past" : "future";
-            return (
-              <li key={r.name} className={state} aria-current={state === "current" ? "step" : undefined}>
-                <span>{r.name}</span>
-                <span className="muted small">{r.from === to ? `Lv ${r.from}` : `Lv ${r.from}–${to}`}</span>
-              </li>
-            );
-          })}
-        </ol>
-        <button className="text-btn left" onClick={() => setAllRanks(!allRanks)} aria-expanded={allRanks}>
-          {allRanks ? "Show less" : "See all 11 ranks"}
-        </button>
-      </section>
 
       <section className="panel">
         <h2 className="section-title">Skills</h2>
@@ -106,60 +77,37 @@ export function ProgressView({ today }: { today: DayKey }) {
         </ul>
       </section>
 
-      <section className="panel">
-        <div className="panel-head">
-          <h2 className="section-title">🇪🇸 100 Days of Spanish</h2>
+      <button className="panel tap" onClick={() => setOpenJourney("spanish")} aria-haspopup="dialog">
+        <span className="panel-head">
+          <span className="section-title">🇪🇸 100 Days of Spanish</span>
           <span className="big-num">{t.spanish} / 100</span>
-        </div>
+        </span>
         <Bar value={t.spanish / 100} label={`${t.spanish} of 100 Spanish days`} />
-        <p className="muted small">
-          Current streak {streak.current} · best {streak.best} · 🛡 {streak.shield ? "ready" : `back in ${streak.toRecharge} days`}
-        </p>
-        {spanish.length > 0 && (
-          <button className="text-btn left" onClick={() => setOpenJourney(openJourney === "spanish" ? null : "spanish")} aria-expanded={openJourney === "spanish"}>
-            {openJourney === "spanish" ? "Hide" : "See"} what got better, day by day
-          </button>
-        )}
-        {openJourney === "spanish" && (
-          <ol className="journey">
-            {spanish.map((x) => (
-              <li key={x.log.id}>
-                <span className="j-n">Day {x.n}</span>
-                <span>{x.log.better || <em className="muted">no note</em>}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+        <span className="streak-line">
+          <span className={`flame${streak.current ? " lit" : ""}`} aria-hidden="true">
+            🔥
+          </span>
+          <span>
+            <strong>{plural(streak.current, "day")}</strong> <span className="muted">streak · best {streak.best}</span>
+          </span>
+          <span className={`shield-pill${streak.shield ? " on" : ""}`}>🛡 {streak.shield ? "ready" : `in ${streak.toRecharge}`}</span>
+        </span>
+        <span className="muted small">{spanish.length ? "Tap for your log, day by day ›" : "Log your first Spanish day on Home."}</span>
+      </button>
 
-      <section className="panel">
-        <div className="panel-head">
-          <h2 className="section-title">🎬 Road to 100 Videos</h2>
+      <button className="panel tap" onClick={() => setOpenJourney("video")} aria-haspopup="dialog">
+        <span className="panel-head">
+          <span className="section-title">🎬 Road to 100 Videos</span>
           <span className="big-num">{t.videos} / 100</span>
-        </div>
-        <div className="road" aria-hidden="true">
+        </span>
+        <span className="road" aria-hidden="true">
           <i style={{ width: `${Math.min(100, t.videos)}%` }} />
           {VIDEO_MILESTONES.map((m) => (
-            <b key={m} className={t.videos >= m ? "hit" : ""} style={{ left: `${m}%` }} title={`${m}`} />
+            <b key={m} className={t.videos >= m ? "hit" : ""} style={{ left: `${m}%` }} />
           ))}
-        </div>
-        <p className="muted small">Milestones at {VIDEO_MILESTONES.join(", ")}</p>
-        {videos.length > 0 && (
-          <button className="text-btn left" onClick={() => setOpenJourney(openJourney === "video" ? null : "video")} aria-expanded={openJourney === "video"}>
-            {openJourney === "video" ? "Hide" : "See"} your creator evolution
-          </button>
-        )}
-        {openJourney === "video" && (
-          <ol className="journey">
-            {videos.map((x) => (
-              <li key={x.log.id}>
-                <span className="j-n">#{x.n}</span>
-                <span>{x.log.better || <em className="muted">no note</em>}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+        </span>
+        <span className="muted small">{videos.length ? "Tap for every video you posted ›" : `Milestones at ${VIDEO_MILESTONES.join(", ")}`}</span>
+      </button>
 
       <section className="panel">
         <h2 className="section-title">🧠 Focus</h2>
@@ -241,35 +189,42 @@ export function ProgressView({ today }: { today: DayKey }) {
         </ul>
       </section>
 
-      <section className="panel">
-        <h2 className="section-title">Cookie jar 🍪</h2>
-        <p className="muted small">What got better, and the wins you've already earned. Read it when it gets hard.</p>
-        <form
-          className="add-row"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = win.trim();
-            if (!text) return;
-            update((d) => ({ ...d, wins: [...d.wins, { date: today, text }] }));
-            setWin("");
-          }}
-        >
-          <input className="text-input" value={win} onChange={(e) => setWin(e.target.value)} placeholder="e.g. Got the scholarship" aria-label="Add a win" maxLength={120} />
-          <button className="secondary" type="submit">
-            Add
-          </button>
-        </form>
-        {jar.length > 0 && (
-          <ul className="jar">
-            {jar.map((c) => (
-              <li key={c.key}>
-                <span className="muted small">{c.tag}</span>
-                <span>{c.text}</span>
+      {openJourney === "spanish" && (
+        <Sheet title={<>🇪🇸 Spanish log <span className="of">{spanish.length} / 100</span></>} onClose={() => setOpenJourney(null)}>
+          {spanish.length === 0 && <p className="muted">No Spanish days yet.</p>}
+          <ol className="journey">
+            {spanish.map((x) => (
+              <li key={x.log.id}>
+                <span className="j-n">Day {x.n}</span>
+                <span className="j-body">
+                  <span className="muted small">
+                    {formatLong(x.log.date)}
+                    {"minutes" in x.log && x.log.minutes ? ` · ${formatDuration(x.log.minutes)}` : ""}
+                  </span>
+                  <span>{x.log.better || <em className="muted">no note</em>}</span>
+                </span>
               </li>
             ))}
-          </ul>
-        )}
-      </section>
+          </ol>
+        </Sheet>
+      )}
+      {openJourney === "video" && (
+        <Sheet title={<>🎬 Your videos <span className="of">{videos.length} / 100</span></>} onClose={() => setOpenJourney(null)}>
+          {videos.length === 0 && <p className="muted">No videos yet.</p>}
+          <ol className="journey">
+            {videos.map((x) => (
+              <li key={x.log.id}>
+                <span className="j-n">#{x.n}</span>
+                <span className="j-body">
+                  <span className="muted small">{formatLong(x.log.date)}</span>
+                  {"title" in x.log && x.log.title && <strong>{x.log.title}</strong>}
+                  <span>{x.log.better || <em className="muted">no note</em>}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Sheet>
+      )}
     </div>
   );
 }

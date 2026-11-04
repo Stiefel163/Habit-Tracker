@@ -82,7 +82,7 @@ function Shell() {
   return (
     <>
       <main className="main" id="main">
-        {tab === "home" && <HomeView today={today} goSettings={() => go("settings")} goProgress={() => go("progress")} />}
+        {tab === "home" && <HomeView today={today} goSettings={() => go("settings")} />}
         {tab === "progress" && <ProgressView today={today} />}
         {tab === "history" && <HistoryView today={today} />}
         {tab === "settings" && <SettingsView />}
