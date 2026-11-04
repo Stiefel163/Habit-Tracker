@@ -265,3 +265,4 @@ p { margin: 0; }
 .cookie-text { font-size: 1.15rem; font-weight: 600; line-height: 1.35; }
 .cookie-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .small-btn { min-height: 44px; padding: 0 14px; font-size: 0.9375rem; }
+.mono-small { font: 400 0.75rem/1.35 var(--mono); }

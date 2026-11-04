@@ -45,6 +45,7 @@ export function SettingsView() {
   const set = (patch: Partial<Settings>) => updateSettings((x) => ({ ...x, ...patch }));
   const [cat, setCat] = useState("");
   const [paste, setPaste] = useState("");
+  const [showText, setShowText] = useState(false);
   const [confirmErase, setConfirmErase] = useState(false);
   const file = useRef<HTMLInputElement>(null);
   const json = JSON.stringify(data);
@@ -123,12 +124,14 @@ export function SettingsView() {
         <div className="btn-row">
           <button
             className="secondary"
-            onClick={() =>
-              navigator.clipboard?.writeText(json).then(
-                () => toast("Backup copied"),
-                () => toast("Copying isn't allowed here. Use Download."),
-              )
-            }
+            onClick={() => {
+              const fallback = () => {
+                setShowText(true);
+                toast("Copying is blocked here. Select the text below and copy it.");
+              };
+              if (!navigator.clipboard?.writeText) return fallback();
+              navigator.clipboard.writeText(json).then(() => toast("Backup copied"), fallback);
+            }}
           >
             Copy backup
           </button>
@@ -143,6 +146,9 @@ export function SettingsView() {
             }}
           >
             Download
+          </button>
+          <button className="secondary" onClick={() => setShowText(!showText)} aria-expanded={showText}>
+            {showText ? "Hide backup text" : "Show backup text"}
           </button>
           <button className="secondary" onClick={() => file.current?.click()}>
             Restore from file
@@ -159,6 +165,16 @@ export function SettingsView() {
             }}
           />
         </div>
+        {showText && (
+          <textarea
+            className="text-input area mono-small"
+            rows={4}
+            readOnly
+            value={json}
+            aria-label="Your backup. Select all and copy."
+            onFocus={(e) => e.currentTarget.select()}
+          />
+        )}
         <textarea className="text-input area" rows={2} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Or paste a copied backup here" aria-label="Paste a backup" />
         {paste.trim() && (
           <button className="secondary" onClick={() => restore(paste)}>

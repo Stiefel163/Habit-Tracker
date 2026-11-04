@@ -54,3 +54,11 @@ Levels, skills, missions, streaks and achievements are **computed from the activ
 ## Backups
 
 Data lives only on the device: use **Settings → Copy backup** now and then. To move to a new phone or address, paste the backup under **Settings → Backup**.
+
+## On your phone
+
+The app is published automatically to **https://stiefel163.github.io/Habit-Tracker/** by `.github/workflows/deploy.yml` on every push to `main`. It tests, builds and deploys to GitHub Pages in about 1–2 minutes.
+
+1. One time: repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+2. On the iPhone, open the address in **Safari → Share → Add to Home Screen**. It opens full-screen with its own icon. Android: Chrome → ⋮ → *Add to Home screen*.
+3. Updates arrive by themselves: close and reopen the app after a push. Your data stays on the phone. The app also opens offline.
