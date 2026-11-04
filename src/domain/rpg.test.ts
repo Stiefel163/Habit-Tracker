@@ -3,7 +3,10 @@ import { appToday, weekStart } from "../lib/date";
 import { emptyData } from "./defaults";
 import { normalize } from "./migrate";
 import {
+  ACHIEVEMENTS,
   RANKS,
+  achievementContext,
+  unlockedAchievements,
   cookieJar,
   diff,
   journey,
@@ -102,7 +105,8 @@ describe("rewards, journeys, mastery", () => {
     const today = "2026-11-04";
     const missions = weekResult(after.logs, weekStart(today), after.settings.targets).missions;
     const ev = diff(snapshot(before, today), snapshot(after, today), "video", missions);
-    expect(ev.map((e) => e.type)).toEqual(["xp", "level", "mission", "milestone"]);
+    expect(ev.map((e) => e.type)).toEqual(["xp", "level", "mission", "milestone", "achievement", "achievement"]);
+    expect(ev.filter((e) => e.type === "achievement").map((e) => (e as { label: string }).label)).toEqual(["Hello World", "Main Character Energy"]);
   });
   it("numbers the Spanish journey by date, even when a day is logged late", () => {
     const j = journey([spanish("2026-11-03", "b"), { ...spanish("2026-11-02", "a"), at: "2026-11-04T09:00:00Z" }], "spanish");
@@ -151,8 +155,32 @@ describe("cookie jar", () => {
       "Ordered food without English",
       "Shorter intro",
       "Got the scholarship",
-      "You published your first video.",
-      "10 Bögen completed.",
+      "Finish 10 Bögen in one day.",
     ]);
+  });
+});
+
+describe("achievements", () => {
+  const got = (logs: ActivityLog[], today = "2026-11-30") => unlockedAchievements(achievementContext(withLogs(logs), today));
+  it("rewards odd combos on the same day only", () => {
+    expect(got([log({ kind: "strength", date: "2026-11-02" }), log({ kind: "swim", date: "2026-11-03" })]).has("amphibian")).toBe(false);
+    expect(got([log({ kind: "strength", date: "2026-11-02" }), log({ kind: "swim", date: "2026-11-02" })]).has("amphibian")).toBe(true);
+  });
+  it("needs all six things in one day for the Jackpot", () => {
+    const d = "2026-11-02";
+    const five = [log({ kind: "strength", date: d }), log({ kind: "swim", date: d }), spanish(d), log({ kind: "video", date: d, better: "x" }), log({ kind: "bogen", date: d, count: 1 })];
+    expect(got(five).has("jackpot")).toBe(false);
+    expect(got([...five, log({ kind: "focus", date: d, minutes: 30, category: "USask" })]).has("jackpot")).toBe(true);
+  });
+  it("adds up focus per day for the long-day ones", () => {
+    const g = got([log({ kind: "focus", date: "2026-11-02", minutes: 400, category: "USask" }), log({ kind: "focus", date: "2026-11-02", minutes: 320, category: "Creator" })]);
+    expect(["monk-mode", "brain-exe", "human"].every((id) => g.has(id))).toBe(true);
+  });
+  it("spots a comeback after a week off", () => {
+    expect(got([spanish("2026-11-01"), spanish("2026-11-05")]).has("comeback")).toBe(false);
+    expect(got([spanish("2026-11-01"), spanish("2026-11-09")]).has("comeback")).toBe(true);
+  });
+  it("has unique ids", () => {
+    expect(new Set(ACHIEVEMENTS.map((a) => a.id)).size).toBe(ACHIEVEMENTS.length);
   });
 });

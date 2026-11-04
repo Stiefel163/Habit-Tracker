@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { RewardProvider } from "./components/Reward";
 import { ToastProvider } from "./components/Toast";
 import { StoreProvider, useStore } from "./data/StoreProvider";
@@ -73,10 +73,9 @@ function Shell() {
   const { data, ready } = useStore();
   const today = useToday(data.settings.dayStartHour);
   const [tab, setTab] = useState<Tab>("home");
-  const go = (t: Tab) => {
-    setTab(t);
-    window.scrollTo(0, 0);
-  };
+  const go = (t: Tab) => setTab(t);
+  // Scroll to the top after the new tab has rendered, not before.
+  useLayoutEffect(() => window.scrollTo(0, 0), [tab]);
 
   if (!ready) return <div className="boot" />;
   return (

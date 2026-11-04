@@ -17,8 +17,8 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
   - **Focus hours**: logged afterwards (no timer), by category, 25 XP per hour, minimum 15 min.
 - **Spanish streak with a Streak Shield:** missing one day uses the Shield and the streak survives. Missing again before it recharges (7 successful days) breaks only the current streak. Days, XP and entries are never lost.
 - **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, 6 a PERFECT WEEK with +200 bonus XP. Nothing is subtracted.
-- **Achievements** come automatically from logged actions only.
-- **Progress:** skills, 100 Days of Spanish with the streak and Shield (tap for the full log: day, date, duration, what you learned), Road to 100 Videos (tap for every video with date), focus stats with a "road to 1,000 hours" per category, weekly history and achievements.
+- **Achievements:** 39 Minecraft-style achievements with odd names, from easy (*Hello World*) to insane (*Are You Even Human?*: 12 focus hours in one day). Some need odd combinations, like lifting and swimming on the same day, or doing all six things in one day. Tap one to see what it takes.
+- **Progress:** focus first (today, week, month, lifetime, and a "road to 1,000 hours" per category), then 100 Days of Spanish with the streak and Shield (tap it for the full log: day, date, duration, what you learned), Road to 100 Videos (tap it for every video with its date), skills, your weeks or months (tap one for its stats and missions), and achievements.
 - **History:** every logged action by day. Tap ⋯ to remove a mistake.
 - **Rewards:** XP count-up, a filling skill bar, level-up / rank-up / mission / milestone moments, and an optional subtle chime and vibration. No negative XP, no loot boxes, no shame screens.
 

@@ -1,5 +1,6 @@
 import { addDays, monthKey, weekDays, weekStart, type DayKey } from "../lib/date";
 import type { ActivityLog, AppData, LogKind, SkillId, Split, WeeklyTargets } from "./types";
+import { ACHIEVEMENTS, type AchContext, type DayAgg } from "./achievements";
 
 /* ==================================================================
    Rewards. Fixed per real action; focus is proportional to time,
@@ -270,19 +271,47 @@ export function totals(logs: ActivityLog[]): Totals {
   return statsFor(logs, all);
 }
 
-export const ACHIEVEMENTS: { id: string; icon: string; metric: keyof Totals; at: number; label: string }[] = [
-  ...[10, 25, 50, 100].map((n) => ({ id: `strength-${n}`, icon: "🦾", metric: "strength" as const, at: n, label: `${n} workouts` })),
-  ...[10, 25, 50].map((n) => ({ id: `swim-${n}`, icon: "🏊", metric: "swim" as const, at: n, label: `${n} swims` })),
-  ...[10, 25, 50, 75, 100].map((n) => ({ id: `spanish-${n}`, icon: "🇪🇸", metric: "spanish" as const, at: n, label: `Spanish ${n} / 100` })),
-  ...[1, 5, 10, 25, 50, 75, 100].map((n) => ({ id: `video-${n}`, icon: "🎬", metric: "videos" as const, at: n, label: n === 1 ? "First video" : `${n} videos` })),
-  ...[10, 50, 100, 250].map((n) => ({ id: `bogen-${n}`, icon: "🚗", metric: "bogen" as const, at: n, label: `${n} Bögen` })),
-  ...[10, 25, 50, 100, 250].map((n) => ({ id: `focus-${n}`, icon: "🧠", metric: "focusMin" as const, at: n * 60, label: `${n} focus hours` })),
-];
-
+export { ACHIEVEMENTS, TIER_NAME, type Achievement } from "./achievements";
 export const VIDEO_MILESTONES = [1, 5, 10, 25, 50, 75, 100];
 
-export function unlockedAchievements(t: Totals): Set<string> {
-  return new Set(ACHIEVEMENTS.filter((a) => t[a.metric] >= a.at).map((a) => a.id));
+const dayGap = (a: DayKey, b: DayKey) => Math.round((Date.parse(b) - Date.parse(a)) / 864e5);
+
+/** The facts achievements are judged on, all derived from the log. */
+export function achievementContext(data: AppData, today: DayKey, level = playerOf(data, today).level): AchContext {
+  const logs = validLogs(data.logs);
+  const days = new Map<DayKey, DayAgg>();
+  for (const date of new Set(logs.map((l) => l.date))) {
+    const st = statsFor(logs, new Set([date]));
+    days.set(date, { ...st, kinds: [st.strength, st.swim, st.spanish, st.videos, st.bogen, st.focusMin].filter((x) => x > 0).length });
+  }
+  const sorted = [...days.keys()].sort();
+  let activeRun = 0;
+  let run = 0;
+  let comeback = false;
+  sorted.forEach((d, i) => {
+    const gap = i ? dayGap(sorted[i - 1], d) : 1;
+    run = gap === 1 ? run + 1 : 1;
+    activeRun = Math.max(activeRun, run);
+    if (gap >= 8) comeback = true;
+  });
+  const swimsPerWeek = new Map<DayKey, number>();
+  for (const l of logs) if (l.kind === "swim") swimsPerWeek.set(weekStart(l.date), (swimsPerWeek.get(weekStart(l.date)) ?? 0) + 1);
+  return {
+    total: { ...totals(logs), logs: logs.length },
+    days,
+    bestStreak: spanishStreak(logs, today, data.settings.shieldEvery).best,
+    perfectWeeks: weekHistory(logs, today, data.settings.targets).filter((w) => w.perfect).length,
+    bestWeekSwims: Math.max(0, ...swimsPerWeek.values()),
+    wins: data.wins.length,
+    level,
+    activeRun,
+    comeback,
+    hours: logs.map((l) => ({ kind: l.kind, hour: new Date(l.at).getHours() })),
+  };
+}
+
+export function unlockedAchievements(c: AchContext): Set<string> {
+  return new Set(ACHIEVEMENTS.filter((a) => a.test(c)).map((a) => a.id));
 }
 
 /* ==================================================================
@@ -348,11 +377,12 @@ export function snapshot(data: AppData, today: DayKey): Snapshot {
   const logs = validLogs(data.logs);
   const week = weekResult(logs, weekStart(today), data.settings.targets);
   const t = totals(logs);
+  const player = playerOf(data, today);
   return {
-    player: playerOf(data, today),
+    player,
     missionsDone: new Set(week.missions.filter((m) => m.complete).map((m) => m.id)),
     perfect: week.perfect,
-    achievements: unlockedAchievements(t),
+    achievements: unlockedAchievements(achievementContext(data, today, player.level)),
     streak: spanishStreak(logs, today, data.settings.shieldEvery),
     spanishDays: t.spanish,
     videos: t.videos,
@@ -382,9 +412,7 @@ export function diff(a: Snapshot, b: Snapshot, kind: LogKind, weekMissions: Week
   for (const m of weekMissions) if (b.missionsDone.has(m.id) && !a.missionsDone.has(m.id)) out.push({ type: "mission", label: m.label });
   if (b.perfect && !a.perfect) out.push({ type: "perfect" });
   if (kind === "video" && VIDEO_MILESTONES.includes(b.videos) && b.videos > a.videos) out.push({ type: "milestone", label: `Video #${b.videos}. Road to 100: ${b.videos} / 100` });
-  // Video achievements are the same moments as the Road to 100 milestones; show them once.
-  for (const ach of ACHIEVEMENTS)
-    if (ach.metric !== "videos" && b.achievements.has(ach.id) && !a.achievements.has(ach.id)) out.push({ type: "achievement", icon: ach.icon, label: ach.label });
+  for (const ach of ACHIEVEMENTS) if (b.achievements.has(ach.id) && !a.achievements.has(ach.id)) out.push({ type: "achievement", icon: ach.icon, label: ach.name });
   return out;
 }
 
@@ -458,15 +486,6 @@ export interface Cookie {
   text: string;
 }
 
-const ACH_TEXT: Record<keyof Totals, (n: number) => string> = {
-  strength: (n) => `${n} strength workouts done.`,
-  swim: (n) => `${n} swims done.`,
-  spanish: (n) => `${n} of 100 Spanish days done.`,
-  videos: (n) => (n === 1 ? "You published your first video." : `${n} videos published.`),
-  bogen: (n) => `${n} Bögen completed.`,
-  focusMin: (n) => `${n / 60} hours of focused work.`,
-};
-
 /** Everything that proves you can do hard things: your words, your wins, your milestones. */
 export function cookieJar(data: AppData, today: DayKey): Cookie[] {
   const logs = validLogs(data.logs);
@@ -474,8 +493,8 @@ export function cookieJar(data: AppData, today: DayKey): Cookie[] {
   for (const x of journey(logs, "spanish")) if (x.log.better) out.push({ key: `s-${x.log.id}`, date: x.log.date, tag: `🇪🇸 Spanish Day ${x.n}`, text: x.log.better });
   for (const x of journey(logs, "video")) if (x.log.better) out.push({ key: `v-${x.log.id}`, date: x.log.date, tag: `🎬 Video #${x.n}`, text: x.log.better });
   data.wins.forEach((w, i) => out.push({ key: `w-${i}`, date: w.date, tag: "🍪 Your win", text: w.text }));
-  const unlocked = unlockedAchievements(totals(logs));
-  for (const a of ACHIEVEMENTS) if (unlocked.has(a.id)) out.push({ key: `a-${a.id}`, tag: `🏆 Achievement`, text: ACH_TEXT[a.metric](a.at) });
+  const unlocked = unlockedAchievements(achievementContext(data, today));
+  for (const a of ACHIEVEMENTS) if (unlocked.has(a.id) && a.tier > 1) out.push({ key: `a-${a.id}`, tag: `🏆 ${a.name}`, text: a.how });
   const best = spanishStreak(logs, today, data.settings.shieldEvery).best;
   if (best >= 3) out.push({ key: "streak", tag: "🔥 Best streak", text: `${best} Spanish days in a row.` });
   const perfect = weekHistory(logs, today, data.settings.targets).filter((w) => w.perfect).length;
