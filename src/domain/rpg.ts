@@ -535,18 +535,12 @@ export interface Cookie {
   text: string;
 }
 
-/** Everything that proves you can do hard things: your words, your wins, your milestones. */
-export function cookieJar(data: AppData, today: DayKey): Cookie[] {
+/** Only things you wrote yourself: your wins, and what got better on Spanish days and videos. No automatic entries. */
+export function cookieJar(data: AppData, _today: DayKey): Cookie[] {
   const logs = validLogs(data.logs);
   const out: Cookie[] = [];
   for (const x of journey(logs, "spanish")) if (x.log.better) out.push({ key: `s-${x.log.id}`, date: x.log.date, tag: `🇪🇸 Spanish Day ${x.n}`, text: x.log.better });
   for (const x of journey(logs, "video")) if (x.log.better) out.push({ key: `v-${x.log.id}`, date: x.log.date, tag: `🎬 Video #${x.n}`, text: x.log.better });
   data.wins.forEach((w, i) => out.push({ key: `w-${i}`, date: w.date, tag: "🍪 Your win", text: w.text }));
-  const unlocked = unlockedAchievements(achievementContext(data, today));
-  for (const a of ACHIEVEMENTS) if (unlocked.has(a.id) && a.tier > 1) out.push({ key: `a-${a.id}`, tag: `🏆 ${a.name}`, text: a.how });
-  const best = spanishStreak(logs, today, data.settings.shieldEvery).best;
-  if (best >= 3) out.push({ key: "streak", tag: "🔥 Best streak", text: `${best} Spanish days in a row.` });
-  const perfect = weekHistory(logs, today, data.settings.targets).filter((w) => w.perfect).length;
-  if (perfect) out.push({ key: "perfect", tag: "⭐ Perfect weeks", text: `${perfect} perfect ${perfect === 1 ? "week" : "weeks"} cleared.` });
   return out;
 }

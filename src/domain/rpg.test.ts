@@ -144,7 +144,7 @@ describe("migration", () => {
 });
 
 describe("cookie jar", () => {
-  it("collects your words, your wins and your achievements", () => {
+  it("holds only what you wrote yourself, no achievements", () => {
     const d = withLogs([
       log({ kind: "spanish", date: "2026-11-02", better: "Ordered food without English" }),
       log({ kind: "video", date: "2026-11-03", better: "Shorter intro" }),
@@ -156,7 +156,6 @@ describe("cookie jar", () => {
       "Ordered food without English",
       "Shorter intro",
       "Got the scholarship",
-      "Finish 10 Bögen in one day.",
     ]);
   });
 });
