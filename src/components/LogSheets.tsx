@@ -151,7 +151,7 @@ function SpanishSheet({ today, onClose }: { today: DayKey; onClose: () => void }
   const [date, setDate] = useState(today);
   const done = onDay(data.logs, "spanish", date);
   const days = journey(data.logs, "spanish");
-  const dayNo = done ? days.find((x) => x.log.id === done.id)?.n ?? days.length : days.filter((x) => x.log.date < date).length + 1;
+  const dayNo = done ? (days.find((x) => x.log.id === done.id)?.n ?? days.length) : days.filter((x) => x.log.date < date).length + 1;
   const [better, setBetter] = useState(done && done.kind === "spanish" ? done.better : "");
   const [minutes, setMinutes] = useState<number | undefined>();
   const ok = better.trim().length > 2;
@@ -209,7 +209,17 @@ function SpanishSheet({ today, onClose }: { today: DayKey; onClose: () => void }
           maxLength={200}
         />
       </label>
-      {!done && <Chips label="Minutes (optional)" options={[10, 15, 20, 30, 45, 60].map((m) => ({ id: m, label: `${m}′` }))} value={minutes} onChange={setMinutes} />}
+      {!done && (
+        <Chips
+          label="Minutes (optional)"
+          options={[10, 15, 20, 30, 45, 60].map((m) => ({
+            id: m,
+            label: `${m}′`,
+          }))}
+          value={minutes}
+          onChange={setMinutes}
+        />
+      )}
     </Sheet>
   );
 }
@@ -236,7 +246,16 @@ function VideoSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
           disabled={!ok}
           onClick={() => {
             onClose();
-            reward({ kind: "video", date, better: better.trim(), title: title.trim() || undefined }, `VIDEO #${no} PUBLISHED`, better.trim());
+            reward(
+              {
+                kind: "video",
+                date,
+                better: better.trim(),
+                title: title.trim() || undefined,
+              },
+              `VIDEO #${no} PUBLISHED`,
+              better.trim(),
+            );
           }}
         >
           Publish #{no} · +{XP.video} XP
@@ -321,7 +340,7 @@ function FocusSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
   const lastFocus = [...data.logs].reverse().find((l) => l.kind === "focus");
   const [date, setDate] = useState(today);
   const [minutes, setMinutes] = useState(60);
-  const [category, setCategory] = useState<string>(lastFocus && lastFocus.kind === "focus" ? lastFocus.category : data.settings.focusCategories[0] ?? "Other");
+  const [category, setCategory] = useState<string>(lastFocus && lastFocus.kind === "focus" ? lastFocus.category : (data.settings.focusCategories[0] ?? "Other"));
   const stats = focusStats(validLogs(data.logs), today);
   const xp = Math.round((minutes / 60) * XP.focusPerHour);
   return (
@@ -384,15 +403,26 @@ function CleanSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
   const [date, setDate] = useState(today);
   const existing = onDay(data.logs, "clean", date) as Extract<ActivityLog, { kind: "clean" }> | undefined;
   const [kept, setKept] = useState<Record<string, boolean> | null>(null);
-  const val = kept ?? { social: !!existing?.social, goon: !!existing?.goon, sleep: !!existing?.sleep };
+  const val = kept ?? {
+    social: !!existing?.social,
+    goon: !!existing?.goon,
+    sleep: !!existing?.sleep,
+  };
   const n = cleanCount(val as { social: boolean; goon: boolean; sleep: boolean });
+  const before = existing ? cleanCount(existing) : 0;
+  const gain = Math.max(0, n - before) * XP.cleanEach;
+  const [pops, setPops] = useState<Record<string, number>>({});
   const save = () => {
     onClose();
     const v = { social: !!val.social, goon: !!val.goon, sleep: !!val.sleep };
-    if (existing) {
+    const title = n === 3 ? "CLEAN DAY" : `${n} / 3 KEPT`;
+    const sub = n === 3 ? "All three. That's the hard part." : undefined;
+    // Anything newly kept gets the full reward moment, also when you add it later.
+    if (gain > 0) reward({ kind: "clean", date, ...v }, title, sub, existing ? { replaces: existing.id } : undefined);
+    else if (existing) {
       updateLog(existing.id, v);
-      toast(n === 3 ? "Clean day updated 🧘" : `Updated · ${n} / 3`);
-    } else reward({ kind: "clean", date, ...v }, n === 3 ? "CLEAN DAY" : `${n} / 3 KEPT`, n === 3 ? "All three. That's the hard part." : undefined);
+      toast(`Updated · ${n} / 3`);
+    } else reward({ kind: "clean", date, ...v }, title, sub);
   };
   return (
     <Sheet
@@ -400,7 +430,7 @@ function CleanSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
       onClose={onClose}
       footer={
         <button className="primary" onClick={save}>
-          {existing ? "Update" : `Save · +${XP.cleanEach * n} XP`}
+          {gain > 0 ? `Save · +${gain} XP` : existing ? "Update" : "Save"}
         </button>
       }
     >
@@ -416,12 +446,29 @@ function CleanSheet({ today, onClose }: { today: DayKey; onClose: () => void }) 
       <ul className="clean-list">
         {CLEAN_ITEMS.map((c) => (
           <li key={c.id}>
-            <button className={`clean-item${val[c.id] ? " on" : ""}`} role="switch" aria-checked={!!val[c.id]} onClick={() => setKept({ ...val, [c.id]: !val[c.id] })}>
+            <button
+              className={`clean-item${val[c.id] ? " on" : ""}`}
+              role="switch"
+              aria-checked={!!val[c.id]}
+              onClick={() => {
+                const on = !val[c.id];
+                setKept({ ...val, [c.id]: on });
+                if (on) {
+                  setPops((p) => ({ ...p, [c.id]: (p[c.id] ?? 0) + 1 }));
+                  if (data.settings.sound) navigator.vibrate?.(10);
+                }
+              }}
+            >
               <span aria-hidden="true">{c.icon}</span>
               <span>{c.label}</span>
               <span className="clean-check" aria-hidden="true">
                 {val[c.id] ? "✓" : ""}
               </span>
+              {!!pops[c.id] && val[c.id] && (
+                <span className="xp-pop" key={pops[c.id]} aria-hidden="true">
+                  +{XP.cleanEach} XP
+                </span>
+              )}
             </button>
           </li>
         ))}

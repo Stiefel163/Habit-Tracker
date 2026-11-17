@@ -8,9 +8,13 @@ interface Reward {
   sub?: string;
   events: RewardEvent[];
   undo: () => void;
+  /** Runs when the overlay closes without Undo. */
+  done?: () => void;
 }
 
-const Ctx = createContext<(l: NewLog, title: string, sub?: string) => void>(() => {});
+type RewardedLog = (l: NewLog, title: string, sub?: string, opts?: { replaces?: string }) => void;
+
+const Ctx = createContext<RewardedLog>(() => {});
 
 let audio: AudioContext | null = null;
 /** A short, quiet two-note chime; three notes for bigger moments. */
@@ -43,7 +47,7 @@ export function RewardProvider({ children }: { children: ReactNode }) {
   const [reward, setReward] = useState<Reward | null>(null);
 
   const log = useCallback(
-    (l: NewLog, title: string, sub?: string) => {
+    (l: NewLog, title: string, sub?: string, opts?: { replaces?: string }) => {
       const { before, after, log: saved } = addLog(l);
       const today = appToday(after.settings.dayStartHour);
       const missions = weekResult(after.logs, weekStart(today), after.settings.targets).missions;
@@ -53,7 +57,20 @@ export function RewardProvider({ children }: { children: ReactNode }) {
         chime(big);
         navigator.vibrate?.(big ? [18, 40, 28] : 14);
       }
-      setReward({ title, sub, events, undo: () => removeLog(saved.id) });
+      // A replacing log (an updated check-in) shows its gain like a new one; the old one is
+      // tidied away once you move on, or stays if you undo.
+      let undone = false;
+      const replaces = opts?.replaces;
+      setReward({
+        title,
+        sub,
+        events,
+        undo: () => {
+          undone = true;
+          removeLog(saved.id);
+        },
+        done: replaces ? () => !undone && removeLog(replaces) : undefined,
+      });
     },
     [addLog, removeLog],
   );
@@ -61,7 +78,15 @@ export function RewardProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={log}>
       {children}
-      {reward && <RewardOverlay reward={reward} onClose={() => setReward(null)} />}
+      {reward && (
+        <RewardOverlay
+          reward={reward}
+          onClose={() => {
+            reward.done?.();
+            setReward(null);
+          }}
+        />
+      )}
     </Ctx.Provider>
   );
 }

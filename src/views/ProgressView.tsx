@@ -24,7 +24,7 @@ import {
   weekHistory,
   weekResult,
 } from "../domain/rpg";
-import { addDays, addMonths, formatLong, formatMonth, formatShort, monthDays, monthKey, weekDays, weekStart, type DayKey } from "../lib/date";
+import { addDays, addMonths, dayIndexInWeek, formatLong, formatMonth, formatShort, monthDays, monthKey, weekDays, weekStart, type DayKey } from "../lib/date";
 import type { ActivityLog } from "../domain/types";
 
 const plural = (n: number, word: string) => `${n} ${n === 1 ? word : word + "s"}`;
@@ -96,7 +96,9 @@ export function ProgressView({ today }: { today: DayKey }) {
                       </span>
                     </div>
                     <Bar value={m.progress} label={`${c}: ${formatHours(min)} of ${m.next.hours} hours`} thin />
-                    <span className="muted small">{m.reached ? m.reached.label : "Just getting started"} · next: {m.next.label}</span>
+                    <span className="muted small">
+                      {m.reached ? m.reached.label : "Just getting started"} · next: {m.next.label}
+                    </span>
                   </li>
                 );
               })}
@@ -162,7 +164,14 @@ export function ProgressView({ today }: { today: DayKey }) {
       <Achievements today={today} />
 
       {openJourney === "spanish" && (
-        <Sheet title={<>🇪🇸 Spanish log <span className="of">{spanish.length} / 100</span></>} onClose={() => setOpenJourney(null)}>
+        <Sheet
+          title={
+            <>
+              🇪🇸 Spanish log <span className="of">{spanish.length} / 100</span>
+            </>
+          }
+          onClose={() => setOpenJourney(null)}
+        >
           {spanish.length === 0 && <p className="muted">No Spanish days yet.</p>}
           <ol className="journey">
             {spanish.map((x) => (
@@ -181,7 +190,14 @@ export function ProgressView({ today }: { today: DayKey }) {
         </Sheet>
       )}
       {openJourney === "video" && (
-        <Sheet title={<>🎬 Your videos <span className="of">{videos.length} / 100</span></>} onClose={() => setOpenJourney(null)}>
+        <Sheet
+          title={
+            <>
+              🎬 Your videos <span className="of">{videos.length} / 100</span>
+            </>
+          }
+          onClose={() => setOpenJourney(null)}
+        >
           {videos.length === 0 && <p className="muted">No videos yet.</p>}
           <ol className="journey">
             {videos.map((x) => (
@@ -201,7 +217,15 @@ export function ProgressView({ today }: { today: DayKey }) {
   );
 }
 
-type Period = { key: string; label: string; days: DayKey[]; stars: number; starsMax: number; rating: string | null; weekStart?: DayKey };
+type Period = {
+  key: string;
+  label: string;
+  days: DayKey[];
+  stars: number;
+  starsMax: number;
+  rating: string | null;
+  weekStart?: DayKey;
+};
 
 const activeDays = (logs: ActivityLog[], days: DayKey[]) => {
   const set = new Set(days);
@@ -219,7 +243,15 @@ function Periods({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
 
   const periods: Period[] = useMemo(() => {
     if (mode === "week")
-      return weeks.map((w) => ({ key: w.start, label: `${formatShort(w.start)} – ${formatShort(weekDays(w.start)[6])}`, days: weekDays(w.start), stars: w.stars, starsMax: w.missions.length, rating: w.rating, weekStart: w.start }));
+      return weeks.map((w) => ({
+        key: w.start,
+        label: `${formatShort(w.start)} – ${formatShort(weekDays(w.start)[6])}`,
+        days: weekDays(w.start),
+        stars: w.stars,
+        starsMax: w.missions.length,
+        rating: w.rating,
+        weekStart: w.start,
+      }));
     const first = logs.reduce((a, l) => (l.date < a ? l.date : a), today);
     const out: Period[] = [];
     for (let m = monthKey(first); m <= monthKey(today); m = addMonths(m, 1)) {
@@ -227,7 +259,14 @@ function Periods({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
       const stars = ws.reduce((a, w) => a + w.stars, 0);
       const avg = ws.length ? stars / ws.length : 0;
       const rating = ratingOf(Math.floor(avg), ws[0]?.missions.length ?? 6);
-      out.push({ key: m, label: formatMonth(m), days: monthDays(m), stars, starsMax: ws.reduce((a, w) => a + w.missions.length, 0), rating: rating ? rating.replace("WEEK", "MONTH") : null });
+      out.push({
+        key: m,
+        label: formatMonth(m),
+        days: monthDays(m),
+        stars,
+        starsMax: ws.reduce((a, w) => a + w.missions.length, 0),
+        rating: rating ? rating.replace("WEEK", "MONTH") : null,
+      });
     }
     return out.reverse();
   }, [mode, weeks, logs, today]);
@@ -398,45 +437,128 @@ function CleanPanel({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
   let streak = 0;
   for (let d = full(today) ? today : addDays(today, -1); full(d); d = addDays(d, -1)) streak++;
   const total = [...clean.values()].filter((l) => cleanCount(l) === 3).length;
+  const [month, setMonth] = useState<string | null>(null);
   return (
-    <section className="panel">
-      <div className="panel-head">
-        <h2 className="section-title">🧘 Clean days</h2>
-        <span className="big-num">{total}</span>
-      </div>
-      <p>
-        <strong>{plural(streak, "day")}</strong> <span className="muted">clean in a row</span>
-      </p>
-      <table className="clean-grid">
-        <thead>
-          <tr>
-            <th />
-            {days.map((d) => (
-              <th key={d} scope="col">
-                {d === today ? "Today" : new Date(`${d}T12:00`).toLocaleDateString("en-US", { weekday: "narrow" })}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {CLEAN_ITEMS.map((c) => (
-            <tr key={c.id}>
-              <th scope="row">
-                <span aria-hidden="true">{c.icon}</span> {c.label}
-              </th>
-              {days.map((d) => {
-                const l = clean.get(d);
-                const st = !l ? "none" : l[c.id] ? "yes" : "no";
-                return (
-                  <td key={d} className={st} aria-label={`${d}: ${st === "none" ? "not logged" : st === "yes" ? "kept" : "missed"}`}>
-                    <i />
-                  </td>
-                );
-              })}
+    <>
+      <section className="panel tap" onClick={() => setMonth(monthKey(today))}>
+        <div className="panel-head">
+          <h2 className="section-title">🧘 Clean days</h2>
+          <span className="big-num">{total}</span>
+        </div>
+        <p>
+          <strong>{plural(streak, "day")}</strong> <span className="muted">clean in a row</span>
+        </p>
+        <table className="clean-grid">
+          <thead>
+            <tr>
+              <th />
+              {days.map((d) => (
+                <th key={d} scope="col">
+                  {d === today
+                    ? "Today"
+                    : new Date(`${d}T12:00`).toLocaleDateString("en-US", {
+                        weekday: "narrow",
+                      })}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
+          </thead>
+          <tbody>
+            {CLEAN_ITEMS.map((c) => (
+              <tr key={c.id}>
+                <th scope="row">
+                  <span aria-hidden="true">{c.icon}</span> {c.label}
+                </th>
+                {days.map((d) => {
+                  const l = clean.get(d);
+                  const st = !l ? "none" : l[c.id] ? "yes" : "no";
+                  return (
+                    <td key={d} className={`${st} c-${c.id}`} aria-label={`${d}: ${st === "none" ? "not logged" : st === "yes" ? "kept" : "missed"}`}>
+                      <i />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <button
+          className="text-btn left"
+          onClick={(e) => {
+            e.stopPropagation();
+            setMonth(monthKey(today));
+          }}
+          aria-haspopup="dialog"
+        >
+          Month view ›
+        </button>
+      </section>
+      {month && <CleanMonth clean={clean} today={today} month={month} setMonth={setMonth} />}
+    </>
+  );
+}
+
+/** A calendar per month: three coloured dots per day, filled when kept. */
+function CleanMonth({ clean, today, month, setMonth }: { clean: Map<DayKey, Extract<ActivityLog, { kind: "clean" }>>; today: DayKey; month: string; setMonth: (m: string | null) => void }) {
+  const first = [...clean.keys()].sort()[0];
+  const min = first ? monthKey(first) : monthKey(today);
+  const max = monthKey(today);
+  const days = monthDays(month);
+  const lead = dayIndexInWeek(days[0]);
+  const inMonth = days.map((d) => clean.get(d)).filter((l): l is NonNullable<typeof l> => !!l);
+  const kept = (id: (typeof CLEAN_ITEMS)[number]["id"]) => inMonth.filter((l) => l[id]).length;
+  const fullDays = inMonth.filter((l) => cleanCount(l) === 3).length;
+  return (
+    <Sheet title="🧘 Clean days" onClose={() => setMonth(null)}>
+      <div className="month-nav">
+        <button className="icon-btn" onClick={() => setMonth(addMonths(month, -1))} disabled={month <= min} aria-label="Previous month">
+          ‹
+        </button>
+        <strong>{formatMonth(month)}</strong>
+        <button className="icon-btn" onClick={() => setMonth(addMonths(month, 1))} disabled={month >= max} aria-label="Next month">
+          ›
+        </button>
+      </div>
+      <ul className="clean-legend">
+        {CLEAN_ITEMS.map((c) => (
+          <li key={c.id}>
+            <i className={`dot c-${c.id}`} /> {c.label} <span className="muted">· {kept(c.id)}×</span>
+          </li>
+        ))}
+      </ul>
+      <div className="cal" role="grid" aria-label={formatMonth(month)}>
+        {["M", "T", "W", "T", "F", "S", "S"].map((w, i) => (
+          <span key={i} className="cal-wd" aria-hidden="true">
+            {w}
+          </span>
+        ))}
+        {Array.from({ length: lead }, (_, i) => (
+          <span key={`x${i}`} />
+        ))}
+        {days.map((d) => {
+          const l = clean.get(d);
+          const future = d > today;
+          const label = !l ? "not logged" : CLEAN_ITEMS.map((c) => `${c.label} ${l[c.id] ? "kept" : "missed"}`).join(", ");
+          return (
+            <span
+              key={d}
+              className={`cal-day${d === today ? " today" : ""}${future ? " future" : ""}${l && cleanCount(l) === 3 ? " full" : ""}`}
+              role="gridcell"
+              aria-label={`${formatShort(d)}: ${future ? "upcoming" : label}`}
+            >
+              <span className="cal-n">{Number(d.slice(8))}</span>
+              <span className="cal-dots" aria-hidden="true">
+                {CLEAN_ITEMS.map((c) => (
+                  <i key={c.id} className={`dot c-${c.id} ${!l ? "none" : l[c.id] ? "yes" : "no"}`} />
+                ))}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+      <p className="period-sum">
+        <strong>{plural(fullDays, "clean day")}</strong> <span className="muted">this month · all three kept</span>
+      </p>
+    </Sheet>
   );
 }

@@ -75,7 +75,9 @@ function Shell() {
   const [tab, setTab] = useState<Tab>("home");
   const go = (t: Tab) => setTab(t);
   // Scroll to the top after the new tab has rendered, not before.
-  useLayoutEffect(() => window.scrollTo(0, 0), [tab]);
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tab]);
 
   if (!ready) return <div className="boot" />;
   return (
