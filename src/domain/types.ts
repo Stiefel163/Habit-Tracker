@@ -62,7 +62,13 @@ export interface CleanDay extends BaseLog {
   sleep: boolean; // kept good sleep times
 }
 
-export type ActivityLog = StrengthLog | SwimLog | SpanishDay | PublishedVideo | DrivingLog | FocusLog | CleanDay;
+/** Stay Hard (Goggins): one tap each time you resisted something, or did something anyway. */
+export interface StayHard extends BaseLog {
+  kind: "hard";
+  type: "resist" | "anyway";
+}
+
+export type ActivityLog = StrengthLog | SwimLog | SpanishDay | PublishedVideo | DrivingLog | FocusLog | CleanDay | StayHard;
 export type LogKind = ActivityLog["kind"];
 
 export interface WeeklyTargets {

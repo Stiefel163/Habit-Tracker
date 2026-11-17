@@ -207,3 +207,15 @@ describe("clean days", () => {
     expect(r.missions.find((m) => m.id === "clean")!.value).toBe(0);
   });
 });
+
+describe("stay hard", () => {
+  it("counts every tap but caps the XP per day", () => {
+    const d = "2026-11-02";
+    const taps = Array.from({ length: 12 }, (_, i) => log({ kind: "hard", date: d, type: i % 2 ? "resist" : "anyway" }));
+    expect(playerOf(withLogs(taps), d).xp).toBe(10 * 5);
+    const t = weekResult(taps, d, emptyData().settings.targets);
+    expect(t.missions.length).toBeGreaterThan(0);
+    const g = unlockedAchievements(achievementContext(withLogs(taps), d));
+    expect(["not-today", "anyway-1", "boats"].every((id) => g.has(id))).toBe(true);
+  });
+});

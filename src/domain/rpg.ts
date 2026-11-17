@@ -15,10 +15,13 @@ export const XP = {
   bogen: 10,
   focusPerHour: 25,
   cleanEach: 10,
+  hard: 5,
   perfectWeek: 200,
 } as const;
 
 export const MIN_FOCUS_MIN = 15;
+/** Stay Hard taps that earn XP per day. Every tap still counts; only the XP stops. */
+export const HARD_XP_PER_DAY = 10;
 
 export const SKILLS: { id: SkillId; name: string; icon: string }[] = [
   { id: "strength", name: "Strength", icon: "🦾" },
@@ -38,6 +41,7 @@ export const SKILL_OF: Record<LogKind, SkillId> = {
   bogen: "driving",
   focus: "focus",
   clean: "discipline",
+  hard: "discipline",
 };
 
 export const SPLITS: { id: Split; label: string }[] = [
@@ -74,6 +78,8 @@ export function xpOf(l: ActivityLog): number {
       return Math.round((Math.max(0, l.minutes) / 60) * XP.focusPerHour);
     case "clean":
       return XP.cleanEach * cleanCount(l);
+    case "hard":
+      return XP.hard;
   }
 }
 
@@ -163,10 +169,13 @@ export interface WeekStats {
   focusMin: number;
   /** Days with all three good behaviours kept. */
   clean: number;
+  /** Stay Hard taps. */
+  resist: number;
+  anyway: number;
 }
 
 export function statsFor(logs: ActivityLog[], days: Set<DayKey>): WeekStats {
-  const s: WeekStats = { strength: 0, swim: 0, spanish: 0, videos: 0, bogen: 0, focusMin: 0, clean: 0 };
+  const s: WeekStats = { strength: 0, swim: 0, spanish: 0, videos: 0, bogen: 0, focusMin: 0, clean: 0, resist: 0, anyway: 0 };
   for (const l of logs) {
     if (!days.has(l.date)) continue;
     if (l.kind === "strength") s.strength++;
@@ -175,6 +184,7 @@ export function statsFor(logs: ActivityLog[], days: Set<DayKey>): WeekStats {
     else if (l.kind === "video") s.videos++;
     else if (l.kind === "bogen") s.bogen += l.count;
     else if (l.kind === "focus") s.focusMin += l.minutes;
+    else if (l.kind === "hard") s[l.type]++;
     else if (cleanCount(l) === 3) s.clean++;
   }
   return s;
@@ -354,6 +364,7 @@ export function achievementContext(data: AppData, today: DayKey, level = playerO
     level,
     activeRun,
     comeback,
+    hard: { resist: logs.filter((l) => l.kind === "hard" && l.type === "resist").length, anyway: logs.filter((l) => l.kind === "hard" && l.type === "anyway").length, bestDay: Math.max(0, ...[...days.values()].map((d) => d.resist + d.anyway)) },
     clean,
     hours: logs.map((l) => ({ kind: l.kind, hour: new Date(l.at).getHours() })),
   };
@@ -393,9 +404,14 @@ export function playerOf(data: AppData, today: DayKey): Player {
   const logs = validLogs(data.logs);
   const skillXp: Record<SkillId, number> = { strength: 0, swimming: 0, spanish: 0, creator: 0, driving: 0, focus: 0, discipline: 0 };
   let focusMin = 0;
+  const hardPerDay = new Map<DayKey, number>();
   for (const l of logs) {
     if (l.kind === "focus") focusMin += l.minutes;
-    else skillXp[SKILL_OF[l.kind]] += xpOf(l);
+    else if (l.kind === "hard") {
+      const n = (hardPerDay.get(l.date) ?? 0) + 1;
+      hardPerDay.set(l.date, n);
+      if (n <= HARD_XP_PER_DAY) skillXp.discipline += xpOf(l);
+    } else skillXp[SKILL_OF[l.kind]] += xpOf(l);
   }
   // From the total, so many short logs earn exactly what one long log earns.
   skillXp.focus = Math.round((focusMin / 60) * XP.focusPerHour);

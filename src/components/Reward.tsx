@@ -12,9 +12,10 @@ interface Reward {
   done?: () => void;
 }
 
-type RewardedLog = (l: NewLog, title: string, sub?: string, opts?: { replaces?: string }) => void;
+/** `quiet`: no overlay for a plain XP gain (the caller animates it); level-ups and achievements still get one. */
+type RewardedLog = (l: NewLog, title: string, sub?: string, opts?: { replaces?: string; quiet?: boolean }) => { id: string; xp: number; overlay: boolean };
 
-const Ctx = createContext<RewardedLog>(() => {});
+const Ctx = createContext<RewardedLog>(() => ({ id: "", xp: 0, overlay: false }));
 
 let audio: AudioContext | null = null;
 /** A short, quiet two-note chime; three notes for bigger moments. */
@@ -47,16 +48,18 @@ export function RewardProvider({ children }: { children: ReactNode }) {
   const [reward, setReward] = useState<Reward | null>(null);
 
   const log = useCallback(
-    (l: NewLog, title: string, sub?: string, opts?: { replaces?: string }) => {
+    (l: NewLog, title: string, sub?: string, opts?: { replaces?: string; quiet?: boolean }) => {
       const { before, after, log: saved } = addLog(l);
       const today = appToday(after.settings.dayStartHour);
       const missions = weekResult(after.logs, weekStart(today), after.settings.targets).missions;
       const events = diff(snapshot(before, today), snapshot(after, today), l.kind, missions);
       const big = events.some((e) => e.type !== "xp");
+      const xp = events.find((e): e is Extract<RewardEvent, { type: "xp" }> => e.type === "xp")?.amount ?? 0;
       if (after.settings.sound) {
         chime(big);
         navigator.vibrate?.(big ? [18, 40, 28] : 14);
       }
+      if (opts?.quiet && !big) return { id: saved.id, xp, overlay: false };
       // A replacing log (an updated check-in) shows its gain like a new one; the old one is
       // tidied away once you move on, or stays if you undo.
       let undone = false;
@@ -71,6 +74,7 @@ export function RewardProvider({ children }: { children: ReactNode }) {
         },
         done: replaces ? () => !undone && removeLog(replaces) : undefined,
       });
+      return { id: saved.id, xp, overlay: true };
     },
     [addLog, removeLog],
   );

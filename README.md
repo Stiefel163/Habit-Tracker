@@ -16,6 +16,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
   - **Bögen**: a stepper for completed practice sheets, +10 XP each.
   - **Focus hours**: logged afterwards (no timer), by category, 25 XP per hour, minimum 15 min.
   - **Clean Day**: a daily check-in for good behaviour (low social media, no gooning, good sleep times), +10 XP for each one kept, in the 🧘 Discipline skill. Saving again for the same day replaces it.
+  - **Stay Hard** (Goggins): two big counters on Home, *Resisted* and *Did it anyway*. One tap is +1 (+5 XP, XP for up to 10 taps a day; every tap still counts).
 - **Spanish streak with a Streak Shield:** missing one day uses the Shield and the streak survives. Missing again before it recharges (7 successful days) breaks only the current streak. Days, XP and entries are never lost.
 - **Weekly missions** (Monday to Sunday, configurable): 3 stars is a GOOD WEEK, 4 a STRONG WEEK, 5 LOCKED IN, all of them a PERFECT WEEK with +200 bonus XP. The Clean days mission counts from the week of your first check-in, so older weeks keep their stars. Nothing is subtracted.
 - **Achievements:** 39 Minecraft-style achievements with odd names, from easy (*Hello World*) to insane (*Are You Even Human?*: 12 focus hours in one day). Some need odd combinations, like lifting and swimming on the same day, or doing all six things in one day. Tap one to see what it takes.

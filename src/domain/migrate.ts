@@ -52,7 +52,7 @@ function fromV2(raw: { days?: Record<string, Record<string, string[]>>; wins?: W
   return d;
 }
 
-const KINDS = new Set(["strength", "swim", "spanish", "video", "bogen", "focus", "clean"]);
+const KINDS = new Set(["strength", "swim", "spanish", "video", "bogen", "focus", "clean", "hard"]);
 
 /** Accepts any saved or backed-up version and returns current data. */
 export function normalize(raw: unknown): AppData {

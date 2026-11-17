@@ -8,6 +8,8 @@ export interface DayAgg {
   videos: number;
   bogen: number;
   focusMin: number;
+  resist: number;
+  anyway: number;
   /** How many of the six activities happened that day. */
   kinds: number;
 }
@@ -27,6 +29,8 @@ export interface AchContext {
   comeback: boolean;
   /** Good-behaviour check-ins: days kept per item, and the longest runs. */
   clean: { full: number; social: number; goon: number; sleep: number; run: number; goonRun: number; sleepRun: number };
+  /** Stay Hard taps: totals and the most in one day. */
+  hard: { resist: number; anyway: number; bestDay: number };
   /** Local clock hour of each log, by kind, as it was logged. */
   hours: { kind: string; hour: number }[];
 }
@@ -66,6 +70,9 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   { id: "clean-1", icon: "🌱", name: "Touch Grass", how: "Keep all three on one day: low social media, no gooning, good sleep.", tier: 1, test: (c) => c.clean.full >= 1 },
 
+  { id: "not-today", icon: "🛑", name: "Not Today", how: "Resist something for the first time and tap Stay Hard.", tier: 1, test: (c) => c.hard.resist >= 1 },
+  { id: "anyway-1", icon: "🔥", name: "Did It Anyway", how: "Do something you didn't feel like doing, and tap Stay Hard.", tier: 1, test: (c) => c.hard.anyway >= 1 },
+
   // Medium: odd combos
   { id: "amphibian", icon: "🐊", name: "Amphibian", how: "Lift and swim on the same day.", tier: 2, test: (c) => anyDay(c, (d) => d.strength > 0 && d.swim > 0) },
   { id: "bilingual-biceps", icon: "💪", name: "Bilingual Biceps", how: "Train and do Spanish on the same day.", tier: 2, test: (c) => anyDay(c, (d) => d.strength > 0 && d.spanish > 0) },
@@ -83,9 +90,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "perfect-1", icon: "⭐", name: "Overachiever", how: "Clear a perfect week: every mission done.", tier: 2, test: (c) => c.perfectWeeks >= 1 },
   { id: "sleep-7", icon: "😴", name: "Sleep Is a Skill", how: "Keep good sleep times 7 days in a row.", tier: 2, test: (c) => c.clean.sleepRun >= 7 },
   { id: "phone-who", icon: "📵", name: "Phone Who?", how: "Keep social media low on 30 days.", tier: 2, test: (c) => c.clean.social >= 30 },
+  { id: "boats", icon: "🚣", name: "Who's Gonna Carry the Boats?", how: "Stay hard 5 times in one day.", tier: 2, test: (c) => c.hard.bestDay >= 5 },
+  { id: "resist-25", icon: "🧱", name: "Brick Wall", how: "Resist 25 times.", tier: 2, test: (c) => c.hard.resist >= 25 },
   { id: "hustler", icon: "🕴", name: "Promoted", how: "Reach Level 10 and stop being a Crook.", tier: 2, test: (c) => c.level >= 10 },
 
   // Hard
+  { id: "iron-will", icon: "⚔️", name: "Iron Will", how: "Resist 100 times.", tier: 3, test: (c) => c.hard.resist >= 100 },
+  { id: "callused", icon: "🪨", name: "Callused Mind", how: "Do it anyway 50 times.", tier: 3, test: (c) => c.hard.anyway >= 50 },
   { id: "monk-arc", icon: "🧘", name: "Monk Arc", how: "7 clean days in a row: all three kept, every day.", tier: 3, test: (c) => c.clean.run >= 7 },
   { id: "no-goon-30", icon: "🗿", name: "Built Different", how: "No gooning for 30 days in a row.", tier: 3, test: (c) => c.clean.goonRun >= 30 },
   { id: "jackpot", icon: "🎰", name: "Jackpot", how: "Do all six things in one day: lift, swim, Spanish, a video, Bögen and focus.", tier: 3, test: (c) => anyDay(c, (d) => d.kinds >= 6) },
@@ -100,6 +111,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "perfect-5", icon: "🌟", name: "Allergic to Losing", how: "Clear 5 perfect weeks.", tier: 3, test: (c) => c.perfectWeeks >= 5 },
 
   // Insane
+  { id: "uncommon", icon: "👹", name: "Uncommon Among Uncommon", how: "Stay hard 500 times in total.", tier: 4, test: (c) => c.hard.resist + c.hard.anyway >= 500 },
   { id: "monk-90", icon: "🏯", name: "Ascended", how: "90 clean days in a row. All three, every single day.", tier: 4, test: (c) => c.clean.run >= 90 },
   { id: "human", icon: "🤖", name: "Are You Even Human?", how: "Focus for 12 hours in one day.", tier: 4, test: (c) => anyDay(c, (d) => d.focusMin >= 720) },
   { id: "spanish-100", icon: "🇪🇸", name: "Basically Spanish Now", how: "Do 100 Spanish days.", tier: 4, test: (c) => c.total.spanish >= 100 },

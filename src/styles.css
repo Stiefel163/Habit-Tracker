@@ -330,3 +330,28 @@ p { margin: 0; }
 .cal-dots { display: flex; gap: 3px; }
 .cal-dots .dot { width: 7px; height: 7px; }
 .cal-dots .dot.none { background: var(--line); }
+
+/* Stay Hard */
+.stayhard { display: grid; gap: 10px; }
+.sh-title { font: 700 0.8125rem var(--mono); letter-spacing: 0.24em; color: var(--muted); }
+.sh-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sh-btn { position: relative; overflow: hidden; display: grid; justify-items: start; gap: 2px; padding: 14px 14px 12px; border-radius: 20px; text-align: left; background: var(--surface); border: 1px solid var(--line); transition: transform 0.08s ease, border-color 0.2s; }
+.sh-btn:active { transform: scale(0.95); }
+.sh-resist { background: radial-gradient(120% 120% at 0% 0%, rgb(255 107 107 / 0.14), transparent 60%), var(--surface); }
+.sh-anyway { background: radial-gradient(120% 120% at 0% 0%, rgb(255 168 76 / 0.16), transparent 60%), var(--surface); }
+.sh-head { font-weight: 650; font-size: 0.9375rem; }
+.sh-num { font-size: 2.8rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.05; font-variant-numeric: tabular-nums; animation: shBump 0.4s cubic-bezier(.3,1.7,.5,1); }
+.sh-resist .sh-num { color: #ff8d8d; }
+.sh-anyway .sh-num { color: #ffb36b; }
+.sh-sub { font-size: 0.8125rem; color: var(--muted); }
+.sh-pop { position: absolute; right: 12px; top: 62%; font: 700 0.875rem var(--mono); color: var(--gold-hi); pointer-events: none; animation: xpPop 0.9s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes shBump { 0% { transform: scale(1); } 35% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.sh-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.sh-table th, .sh-table td { padding: 8px 0; text-align: right; border-top: 1px solid var(--line); }
+.sh-table thead th { border-top: 0; font-size: 0.75rem; font-weight: 600; color: var(--muted); padding-top: 0; }
+.sh-table tbody th { text-align: left; font-weight: 550; }
+.sh-table td { font: 600 1rem var(--mono); width: 18%; }
+.sh-table td.sh-total { font-size: 1.25rem; }
+.sh-table .sh-resist td.sh-total { color: #ff8d8d; }
+.sh-table .sh-anyway td.sh-total { color: #ffb36b; }
+.sh-table .sh-resist, .sh-table .sh-anyway { background: none; }

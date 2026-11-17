@@ -141,6 +141,8 @@ export function ProgressView({ today }: { today: DayKey }) {
 
       <CleanPanel logs={logs} today={today} />
 
+      <StayHardPanel logs={logs} today={today} />
+
       <section className="panel">
         <h2 className="section-title">Skills</h2>
         <ul className="skill-cards">
@@ -560,5 +562,43 @@ function CleanMonth({ clean, today, month, setMonth }: { clean: Map<DayKey, Extr
         <strong>{plural(fullDays, "clean day")}</strong> <span className="muted">this month · all three kept</span>
       </p>
     </Sheet>
+  );
+}
+
+/** Stay Hard: how often you resisted, and how often you did it anyway. */
+function StayHardPanel({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
+  const week = new Set(weekDays(weekStart(today)));
+  const month = monthKey(today);
+  const n = (type: "resist" | "anyway", f: (d: DayKey) => boolean) => logs.filter((l) => l.kind === "hard" && l.type === type && f(l.date)).length;
+  const rows = [
+    { type: "resist" as const, icon: "🛑", label: "Resisted" },
+    { type: "anyway" as const, icon: "🔥", label: "Did it anyway" },
+  ];
+  return (
+    <section className="panel">
+      <h2 className="section-title">💪 Stay hard</h2>
+      <table className="sh-table">
+        <thead>
+          <tr>
+            <th />
+            <th scope="col">Week</th>
+            <th scope="col">Month</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.type} className={`sh-${r.type}`}>
+              <th scope="row">
+                <span aria-hidden="true">{r.icon}</span> {r.label}
+              </th>
+              <td>{n(r.type, (d) => week.has(d))}</td>
+              <td>{n(r.type, (d) => monthKey(d) === month)}</td>
+              <td className="sh-total">{n(r.type, () => true)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

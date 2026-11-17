@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { Bar } from "../components/Bar";
 import { LogSheet, type LogKindUI } from "../components/LogSheets";
+import { useRewardedLog } from "../components/Reward";
 import { Sheet } from "../components/Sheet";
+import { useToast } from "../components/Toast";
+import type { ActivityLog } from "../domain/types";
 import { useStore } from "../data/StoreProvider";
 import { MAX_LEVEL, RANKS, cleanCount, cookieJar, formatHours, journey, playerOf, playerXpToNext, spanishStreak, statsFor, validLogs, weekResult, type Cookie, type Player } from "../domain/rpg";
 import { formatShort, weekDays, weekStart, type DayKey } from "../lib/date";
@@ -50,6 +53,8 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
           <span className="muted">{fmt(player.xp)} total</span>
         </span>
       </button>
+
+      <StayHard logs={logs} today={today} />
 
       <section aria-label="Quick log">
         <h2 className="section-title">Quick log</h2>
@@ -261,5 +266,55 @@ function JarSheet({ items, today, onClose }: { items: Cookie[]; today: DayKey; o
         ))}
       </ul>
     </Sheet>
+  );
+}
+
+const HARD = [
+  { type: "resist", icon: "🛑", label: "Resisted", done: "Resisted. Stay hard." },
+  { type: "anyway", icon: "🔥", label: "Did it anyway", done: "Did it anyway. Stay hard." },
+] as const;
+
+/** Goggins: one tap when you resisted something or did it anyway. The number is the reward. */
+function StayHard({ logs, today }: { logs: ActivityLog[]; today: DayKey }) {
+  const { removeLog } = useStore();
+  const reward = useRewardedLog();
+  const toast = useToast();
+  const [pop, setPop] = useState<{ type: string; n: number; xp: number } | null>(null);
+  const count = (type: string, day?: DayKey) => logs.filter((l) => l.kind === "hard" && l.type === type && (!day || l.date === day)).length;
+  return (
+    <section className="stayhard" aria-label="Stay hard">
+      <h2 className="sh-title">STAY HARD</h2>
+      <div className="sh-row">
+        {HARD.map((h) => {
+          const total = count(h.type);
+          const todayN = count(h.type, today);
+          return (
+            <button
+              key={h.type}
+              className={`sh-btn sh-${h.type}`}
+              aria-label={`${h.label}: ${total} times. Tap to add one.`}
+              onClick={() => {
+                const r = reward({ kind: "hard", date: today, type: h.type }, h.done.toUpperCase(), undefined, { quiet: true });
+                setPop((p) => ({ type: h.type, n: (p?.n ?? 0) + 1, xp: r.xp }));
+                if (!r.overlay) toast(`${h.icon} ${h.done}`, () => removeLog(r.id));
+              }}
+            >
+              <span className="sh-head">
+                <span aria-hidden="true">{h.icon}</span> {h.label}
+              </span>
+              <span className="sh-num" key={pop?.type === h.type ? pop.n : 0}>
+                {total}
+              </span>
+              <span className="sh-sub">{todayN ? `+${todayN} today` : "tap +1"}</span>
+              {pop?.type === h.type && (
+                <span className="sh-pop" key={`p${pop.n}`} aria-hidden="true">
+                  +1{pop.xp ? ` · +${pop.xp} XP` : ""}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

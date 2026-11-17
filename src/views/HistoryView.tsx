@@ -18,6 +18,8 @@ function describe(l: ActivityLog, nth: Map<string, number>): { icon: string; tit
       return { icon: "🚗", title: `${l.count} ${l.count === 1 ? "Bogen" : "Bögen"}` };
     case "focus":
       return { icon: "🧠", title: `${formatDuration(l.minutes)} focus`, note: l.category };
+    case "hard":
+      return l.type === "resist" ? { icon: "🛑", title: "Stay Hard · Resisted" } : { icon: "🔥", title: "Stay Hard · Did it anyway" };
     case "clean":
       return { icon: "🧘", title: cleanCount(l) === 3 ? "Clean day" : `Clean day ${cleanCount(l)} / 3`, note: CLEAN_ITEMS.map((c) => `${l[c.id] ? "✓" : "✗"} ${c.label}`).join(" · ") };
   }
