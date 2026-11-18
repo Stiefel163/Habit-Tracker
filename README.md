@@ -6,7 +6,7 @@ A real-life RPG. Productive real-world actions earn XP, level up skills, fill we
 
 ## What's in it
 
-- **Home (slim):** level card (tap it for the rank ladder and the XP to the next level and rank), quick log at the top, your vision line, a **cookie jar card** with one thing you've already done (tap it to see the whole jar in random order and add a win; *Another one ↻* shows a random other), and weekly missions at the bottom.
+- **Home (slim):** quick-log tiles turn green with ✓ once done today and gold with ⭐ once their weekly goal is reached; level card (tap it for the rank ladder and the XP to the next level and rank), quick log at the top, your vision line, a **cookie jar card** with one thing you've already done (tap it to see the whole jar in random order and add a win; *Another one ↻* shows a random other), and weekly missions at the bottom.
 - **Skills:** 🦾 Strength, 🏊 Swimming, 🇪🇸 Spanish, 🎬 Creator, 🚗 Driving Theory, 🧠 Focus, 🧘 Discipline.
 - **Quick logs** (each under 5 seconds):
   - Strength workout (optional split and duration), +50 XP

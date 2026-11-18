@@ -62,7 +62,7 @@ describe("weekly missions", () => {
     log({ kind: "video", date: "2026-11-07", better: "Faster pacing" }),
     log({ kind: "bogen", date: "2026-11-03", count: 6 }),
     log({ kind: "bogen", date: "2026-11-07", count: 4 }),
-    log({ kind: "focus", date: "2026-11-03", minutes: 600, category: "USask" }),
+    log({ kind: "focus", date: "2026-11-03", minutes: 1200, category: "USask" }),
     ...["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"].map((date) => log({ kind: "clean", date, social: true, goon: true, sleep: true })),
   ];
   it("counts stars and rates the week", () => {
@@ -73,7 +73,7 @@ describe("weekly missions", () => {
     expect(full).toMatchObject({ stars: 7, perfect: true, rating: "PERFECT WEEK" });
   });
   it("a perfect week adds a 200 XP bonus; incomplete missions cost nothing", () => {
-    const base = 3 * 50 + 40 + 5 * 25 + 100 + 10 * 10 + 250 + 5 * 30;
+    const base = 3 * 50 + 40 + 5 * 25 + 100 + 10 * 10 + 500 + 5 * 30;
     expect(playerOf(withLogs(week), "2026-11-08").xp).toBe(base + 200);
     expect(playerOf(withLogs(week.slice(0, 3)), "2026-11-08").xp).toBe(150);
     expect(weekHistory(week, "2026-11-10", emptyData().settings.targets)[0].start).toBe("2026-11-09");
@@ -217,5 +217,14 @@ describe("stay hard", () => {
     expect(t.missions.length).toBeGreaterThan(0);
     const g = unlockedAchievements(achievementContext(withLogs(taps), d));
     expect(["not-today", "anyway-1", "boats"].every((id) => g.has(id))).toBe(true);
+  });
+});
+
+describe("settings updates", () => {
+  it("moves an old 10 h focus goal to 20 h once, and keeps later changes", () => {
+    const old = normalize({ version: 3, logs: [], wins: [], settings: { version: 3, targets: { focusHours: 10 } } });
+    expect(old.settings.targets.focusHours).toBe(20);
+    const later = normalize({ ...old, settings: { ...old.settings, targets: { ...old.settings.targets, focusHours: 15 } } });
+    expect(later.settings.targets.focusHours).toBe(15);
   });
 });

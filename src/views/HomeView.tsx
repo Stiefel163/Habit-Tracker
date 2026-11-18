@@ -27,15 +27,39 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
 
   const cleanToday = logs.find((l) => l.kind === "clean" && l.date === today);
   const cleanN = cleanToday && cleanToday.kind === "clean" ? cleanCount(cleanToday) : null;
-  const quick: { kind: LogKindUI; icon: string; label: string; sub: string; done: boolean; wide?: boolean }[] = [
-    { kind: "strength", icon: "🦾", label: "Strength", sub: todayStats.strength ? "✓ today" : `${weekStats.strength} / ${s.targets.strength} this week`, done: !!todayStats.strength },
-    { kind: "swim", icon: "🏊", label: "Swim", sub: todayStats.swim ? "✓ today" : `${weekStats.swim} / ${s.targets.swim} this week`, done: !!todayStats.swim },
-    { kind: "spanish", icon: "🇪🇸", label: "Spanish Day", sub: streak.todayDone ? `✓ Day ${spanishNext}` : `Day ${spanishNext} / 100`, done: streak.todayDone },
-    { kind: "video", icon: "🎬", label: "Publish Video", sub: `Next: #${videoNext}`, done: false },
-    { kind: "bogen", icon: "🚗", label: "Bögen", sub: todayStats.bogen ? `${todayStats.bogen} today` : `${weekStats.bogen} / ${s.targets.bogen} this week`, done: false },
-    { kind: "focus", icon: "🧠", label: "Focus Hours", sub: todayStats.focusMin ? `${formatHours(todayStats.focusMin)} today` : `${formatHours(weekStats.focusMin)} this week`, done: false },
-    { kind: "clean", icon: "🧘", label: "Clean Day", sub: cleanN === null ? `Social media · gooning · sleep · ${weekStats.clean} / ${s.targets.clean} this week` : `${cleanN === 3 ? "✓ " : ""}${cleanN} / 3 kept today · tap to change`, done: cleanN === 3, wide: true },
-  ];
+  // Each tile shows today's state (green ✓) and the week goal (gold ⭐ once reached).
+  const goal = (id: string) => week.missions.find((m) => m.id === id);
+  const tile = (kind: LogKindUI, icon: string, label: string, missionId: string, todayDone: boolean, todayText: string, weekText: (m: NonNullable<ReturnType<typeof goal>>) => string, fallback: string, wide = false) => {
+    const m = goal(missionId);
+    const reached = !!m?.complete;
+    const progress = m ? weekText(m) : fallback;
+    const sub = reached ? `${progress} · done` : todayDone ? `✓ ${todayText} · ${progress}` : progress;
+    return { kind, icon, label, sub, today: todayDone, reached, wide };
+  };
+  const quick = [
+    tile("strength", "🦾", "Strength", "strength", !!todayStats.strength, "today", (m) => `${m.value} / ${m.target} this week`, `${weekStats.strength} this week`),
+    tile("swim", "🏊", "Swim", "swim", !!todayStats.swim, "today", (m) => `${m.value} / ${m.target} this week`, `${weekStats.swim} this week`),
+    tile("spanish", "🇪🇸", "Spanish Day", "spanish", streak.todayDone, `Day ${spanishNext}`, (m) => `${m.value} / ${m.target} days`, `Day ${spanishNext} / 100`),
+    tile("video", "🎬", "Publish Video", "videos", !!todayStats.videos, "posted today", (m) => `${m.value} / ${m.target} this week`, `Next: #${videoNext}`),
+    tile("bogen", "🚗", "Bögen", "bogen", !!todayStats.bogen, `${todayStats.bogen} today`, (m) => `${m.value} / ${m.target}`, `${weekStats.bogen} this week`),
+    tile("focus", "🧠", "Focus Hours", "focusHours", !!todayStats.focusMin, `${formatHours(todayStats.focusMin)} today`, (m) => `${formatHours(weekStats.focusMin).replace(" h", "")} / ${m.target} h`, `${formatHours(weekStats.focusMin)} this week`),
+    tile(
+      "clean",
+      "🧘",
+      "Clean Day",
+      "clean",
+      cleanN === 3,
+      "3 / 3 today",
+      (m) => `${m.value} / ${m.target} clean days`,
+      `${weekStats.clean} clean days this week`,
+      true,
+    ),
+  ].map((q) => {
+    if (q.kind !== "clean" || q.today) return q;
+    // Clean Day: say what today still needs.
+    const lead = cleanN === null ? "Social media · gooning · sleep" : `${cleanN} / 3 today · tap to add`;
+    return { ...q, sub: `${lead} · ${q.sub}` };
+  });
 
   return (
     <div className="view">
@@ -61,7 +85,12 @@ export function HomeView({ today, goSettings }: { today: DayKey; goSettings: () 
         <ul className="quick">
           {quick.map((q) => (
             <li key={q.kind} className={q.wide ? "wide" : undefined}>
-              <button className={`quick-btn${q.done ? " done" : ""}`} onClick={() => setOpen(q.kind)} aria-haspopup="dialog">
+              <button className={`quick-btn${q.reached ? " reached" : q.today ? " today" : ""}`} onClick={() => setOpen(q.kind)} aria-haspopup="dialog">
+                {(q.reached || q.today) && (
+                  <span className="q-badge" aria-hidden="true">
+                    {q.reached ? "⭐" : "✓"}
+                  </span>
+                )}
                 <span className="q-icon" aria-hidden="true">
                   {q.icon}
                 </span>

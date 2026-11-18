@@ -94,6 +94,8 @@ export interface Settings {
   focusCategories: string[];
   vision: string; // why you do this (shown on Home)
   sound: boolean; // sound + haptics on rewards
+  /** One-time settings updates already applied, so they never run twice. */
+  applied?: string[];
 }
 
 export interface AppData {
